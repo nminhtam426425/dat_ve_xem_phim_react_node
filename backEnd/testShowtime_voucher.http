@@ -1,0 +1,100 @@
+// API lấy tất cả suất chiếu
+#GET http://localhost:3001/showtimes/all
+
+// API tạo suất chiếu mới
+# POST http://localhost:3001/showtimes
+# Content-Type: application/json
+
+# {
+    # "distance_minutes": 5,
+    # "movie_id":1,
+    # "room_id":2,
+    # "start_time":"2026-06-05 8:10:00",
+    # "price":45000
+# }
+
+// API sửa suất chiếu mới
+# PUT http://localhost:3001/showtimes
+# Content-Type: application/json
+
+# {
+#     "showtime_id": "da77b7f7-0f76-41b5-b82a-6fb287c3c9bf",
+#     "start_time":"2026-06-01 10:16:00",
+#     "movie_id":1
+# }
+
+
+# API lấy thông tin các nhân
+# GET http://localhost:3001/showtimes/date/2026-06-19
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgxODYyNjAzLCJleHAiOjE3ODE4OTE0MDN9.MI4IgTaoQ4V9qxCejDxiAW9Mr31Cv5ifTsjVZqM5Md8
+
+
+// API tạo voucher mới
+# POST http://localhost:3001/vouchers
+# Content-Type: application/json
+
+# {
+#     "code": "GIAM_GIA_SAP_SAN_2",
+#     "min_order_value":100000,
+#     "discount":20000,
+#     "max_discount_value": null,
+#     "point_cost":10,
+#     "expiry_date":"2026-06-10 00:00:00",
+#     "usage_limit":100,
+#     "type":"normal",
+#     "discount_type":"fixed_amount"
+# }
+
+// API update voucher
+# pUT http://localhost:3001/vouchers/update
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgxODgzOTI3LCJleHAiOjE3ODE5MTI3Mjd9.dkvAZngTTaTqDmZCiH2qSkEiTsueUyaTsSmlWs7v2Q4
+# Content-Type: application/json
+
+# {
+#     "id":1,
+#     "code": "GIAM_GIA_SAP_SAN_2",
+#     "min_order_value":100000,
+#     "discount":20000,
+#     "max_discount_value": null,
+#     "point_cost":10,
+#     "expiry_date":"2026-12-01 00:00:00",
+#     "usage_limit":1999,
+#     "discount_type":"fixed_amount"
+# }
+
+
+#API sử dụng voucher
+# DELETE  http://localhost:3001/showtimes/0bcf5c97-8794-4aa4-94d5-840956323951
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgxODgzOTI3LCJleHAiOjE3ODE5MTI3Mjd9.dkvAZngTTaTqDmZCiH2qSkEiTsueUyaTsSmlWs7v2Q4
+
+
+#API sử dụng cho đặt vé tại quầy
+# GET http://localhost:3001/showtimes/staff
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgyMDMxNDc0LCJleHAiOjE3ODIwNjAyNzR9.f-49E76rTTUbgqzH5bu0FDe8PxNmmz6WrS4vHJmZkU8
+
+
+#API sử dụng cho danh sách trạng thái đặt vé
+GET http://localhost:3001/showtimes/seats/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgyMDMxNDc0LCJleHAiOjE3ODIwNjAyNzR9.f-49E76rTTUbgqzH5bu0FDe8PxNmmz6WrS4vHJmZkU8
+
+
+# API đăng nhập
+# POST http://localhost:3001/auth/login
+# Content-Type: application/json
+
+# {
+#     "username":"minhtam2",
+#     "password":"12345678",
+#     "type":"admin"
+# }
+
+
+// API sử dụng voucher
+# POST http://localhost:3001/vouchers/use
+
+#API sử dụng voucher
+# DELETE  http://localhost:3001/vouchers/3
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgxODgzOTI3LCJleHAiOjE3ODE5MTI3Mjd9.dkvAZngTTaTqDmZCiH2qSkEiTsueUyaTsSmlWs7v2Q4
+
+//Hàm lấy các suất chiếu của 1 phim trong 3 ngày tính từ hôm nay
+#GET http://localhost:3001/showtimes/movie/12

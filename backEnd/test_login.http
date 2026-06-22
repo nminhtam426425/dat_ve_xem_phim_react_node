@@ -1,0 +1,70 @@
+// API lấy tất cả user
+# GET http://localhost:3001/users/all
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdGF0dXMiOiJpc0xvZ2luZyIsImlhdCI6MTc4MDg4NTAzMSwiZXhwIjoxNzgwODg1MDQxfQ.G_saTvzXC3K7VGI3jkH37bKotGoZXoJoHiEe-wckCUo
+# GET http://localhost:3001/categories/all
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgwOTI4NjkzLCJleHAiOjE3ODEwMTUwOTN9.DSSf7dazscBfNXctwqKRYX50-puIU6YZqMJIpQCVerk
+
+// API chỉnh sửa thông tin user
+# POST http://localhost:3001/users
+# Content-Type: application/json
+
+# {
+#     "username":"tamabc",
+#     "password":"12345678",
+#     "fullname": null,
+#     "email": null,
+#     "phone":null,
+#     "role":"user"
+# }
+
+# API đăng nhập
+# POST http://localhost:3001/auth/login
+# Content-Type: application/json
+
+# {
+#     "username":"minhtam2",
+#     "password":"12345678",
+#     "type":"admin"
+# }
+
+# API lấy thông tin các nhân
+# GET http://localhost:3001/users
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgxNzcwMDkwLCJleHAiOjE3ODE3NzA5OTB9.cWrGeHiep21bQJKDW_0wZnfKmf18nA0h9YY_HZ8E7a8
+
+// API refreshtoken
+# POST http://localhost:3001/auth/login
+# Content-Type: application/json
+
+# {
+#     "username":"minhtam2",
+#     "password":"12345678",
+#     "type":["admin"]
+# }
+
+// API sửa thông tin tài khoản, trừ mật khẩu
+# PUT http://localhost:3001/users
+# Content-Type: application/json
+
+# {
+#     "id":"ebc8680d-0b7d-4840-9a2b-8e9a063ca6d6",
+#     "is_activating": 1
+# }
+
+// API tạo mới nhân viên - admin
+# POST http://localhost:3001/users/staff
+# Content-Type: application/json
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgwOTA1OTYwLCJleHAiOjE3ODA5OTIzNjB9.zVvnF4B3o7Z6omjoIRLiEM78CYNyHVXzF7T-15R9Gkk
+
+# {
+#     "username":"nhanvien02",
+#     "password":"12345678",
+#     "role":"staff",
+#     "branchId": 1
+# }
+
+// API lấy tất vả nhân viên của chi nhánh
+# GET http://localhost:3001/branches/staff/1
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwYjQ3YmFmLWIyZGMtNGY5NS05Nzk0LWUyODcwYjZiZTk2NSIsInJvbGUiOiJhZG1pbiIsInN0YXR1cyI6ImlzTG9naW5nIiwiaWF0IjoxNzgwOTA1OTYwLCJleHAiOjE3ODA5OTIzNjB9.zVvnF4B3o7Z6omjoIRLiEM78CYNyHVXzF7T-15R9Gkk
+
+// API gửi mail
+# GET http://localhost:3001/testGmail/
