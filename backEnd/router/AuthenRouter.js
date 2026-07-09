@@ -4,6 +4,7 @@ import express from 'express'
 const routerAuthen = express.Router()
 
 routerAuthen.post('/login',AuthenController.login)
+routerAuthen.post('/login-google',AuthenController.loginWithGoogle)
 routerAuthen.post('/refreshToken',AuthenController.refreshToken)
 routerAuthen.post('/logout',AuthenController.logout)
 

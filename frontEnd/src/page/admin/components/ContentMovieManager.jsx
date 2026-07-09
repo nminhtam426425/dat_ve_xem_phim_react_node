@@ -1,18 +1,9 @@
-import {Search, Plus, ChevronDown, Pencil, Trash2, PlayCircle, Calendar, History
-}
-from 'lucide-react'
-import {formatDate} from '../../validate.js' 
+import {Search, Plus, ChevronDown, Pencil, PlayCircle, Calendar, History, Trash2, TrendingUp} from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Paging from './Paging.jsx'
-
-const removeVietnameseTones = (str) => {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") 
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D")
-      .toLowerCase();
-}
+import { removeVietnameseTones } from '../../config.js'
+import { formatVND2,formatDate } from '../../validate.js'
 
 const changeStatus = (status) => {
     const temp = {
@@ -31,11 +22,20 @@ const countByCondition = (datas, key, value) => {
     if (!datas) return 0
     
     return datas.filter(item => item[key] === value).length
-};
+}
 
-const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, currentPage, setConfirm, categories, setDataItemBeforeConfirm}) => {
+const formatShowCategories = (categories) => {
+    if(!categories) return ""
+    let length = categories.length > 2 ? 2 : categories.length
+    let result = []
+    for(let i = 0; i < length; i++)
+        result.push(categories[i].name)
+    return result.join(', ')
+}
+
+const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, currentPage, setConfirm, categories, setDataItemBeforeConfirm, setShowFormTrending, movieTrending}) => {
     const [selectedCategory, setSelectedCategory] = useState(0)
-    const [statusSelected, setStatusSelected] = useState('all')
+    const [statusSelected, setStatusSelected] = useState('showing')
     const [searchKeyword, setSearchKeyword] = useState('')
     
 
@@ -45,8 +45,8 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
     
             const matchStatus = statusSelected === 'all' || movie.status === statusSelected
     
-            const keyword = removeVietnameseTones(searchKeyword.trim());
-            const matchSearch = keyword === "" || removeVietnameseTones(movie.title).includes(keyword)
+            const keyword = removeVietnameseTones(searchKeyword.trim())
+            const matchSearch = keyword === "" || removeVietnameseTones(movie.title).includes(keyword) || removeVietnameseTones(movie.director).includes(keyword)
     
             return matchCategory && matchStatus && matchSearch
         })
@@ -93,15 +93,34 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
     return <div className="p-gutter max-w-container-max mx-auto w-full">
          <section className=" grid grid-cols-1 md:grid-cols-4 gap-gutter mb-2">
             <div className="bg-white p-6 rounded-xl border border-outline-variant/20 shadow-sm">
-                <div className="flex justify-between items-start mb-4">
-                    <span className="p-2 bg-primary-container/10 rounded-lg text-primary">
-                        <span className="material-symbols-outlined" data-icon="movie">
-                            <Trash2 size={20} />
-                        </span>
-                    </span>
-                </div>
-                <div className="text-2xl font-black text-on-surface">{countByCondition(datas, 'status', 'showing') + countByCondition(datas, 'status', 'coming_soon')}</div>
-                <div className="text-secondary text-sm font-label-bold">Tổng số phim</div>
+                {
+                    movieTrending != null
+                    ?
+                    <>
+                    <div className="text-secondary text-xl font-label-bold flex gap-4">
+                        Hot nhất
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-16 rounded-md overflow-hidden shadow-sm bg-surface-container">
+                            <img className="w-full h-full object-cover" src={movieTrending?.poster_url}/>
+                        </div>
+                        <div>
+                            <div className="font-label-bold text-on-surface text-base">{movieTrending?.title}</div>
+                            <div className="text-secondary text-xs">Tổng: {movieTrending?.showtimes_count || 0} suất</div>
+                            <div className="text-secondary text-xs">Suất chiếu mới: {movieTrending?.newShowtimes_count}</div>
+                            <div className="text-secondary text-xs">Doanh thu: {formatVND2(movieTrending?.total_revenue)}</div>
+                        </div>
+                    </div>
+
+                    <Link to="/" target="blank" className="mt-2 text-primary hover:underline text-md">Đến trang Home</Link>
+                    </>
+                    :
+                    <div className='h-full flex items-end'>
+                        <span>Chưa có phim hot nhất.</span>
+                    </div>
+                }
+                
             </div>
             <div className="bg-white p-6 rounded-xl border border-outline-variant/20 shadow-sm">
                 <div className="flex justify-between items-start mb-4">
@@ -149,6 +168,7 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                         className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/50 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md outline-none" 
                         placeholder="Tìm kiếm tên phim..." 
                         type="text"
+                        value={searchKeyword}
                         onChange={handleSearch}/>
                 </div>
 
@@ -169,11 +189,6 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
 
                 <div className="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant/30">
                     <button 
-                        className={`px-4 py-1.5 rounded-md text-label-bold ${statusSelected==='all' ? 'bg-white shadow-sm text-primary': 'text-secondary hover:bg-white/50 transition-all'}`}
-                        onClick={() => handleButtonStatus('all')}>
-                            Tất cả
-                    </button>
-                    <button 
                         className={`px-4 py-1.5 rounded-md text-label-bold ${statusSelected==='showing' ? 'bg-white shadow-sm text-primary': 'text-secondary hover:bg-white/50 transition-all'}`}
                         onClick={() => handleButtonStatus('showing')}>
                             Đang chiếu
@@ -182,6 +197,11 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                         className={`px-4 py-1.5 rounded-md text-label-bold ${statusSelected==='coming_soon' ? 'bg-white shadow-sm text-primary': 'text-secondary hover:bg-white/50 transition-all'}`}
                         onClick={() => handleButtonStatus('coming_soon')}>
                             Sắp chiếu
+                    </button>
+                    <button 
+                        className={`px-4 py-1.5 rounded-md text-label-bold ${statusSelected==='ended' ? 'bg-white shadow-sm text-primary': 'text-secondary hover:bg-white/50 transition-all'}`}
+                        onClick={() => handleButtonStatus('ended')}>
+                            Kết thúc
                     </button>
                 </div>
             </div>
@@ -203,8 +223,8 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                         <tr>
                             <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Phim</th>
                             <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Thể loại</th>
-                            <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Thời lượng</th>
-                            <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30 text-center">Trạng thái</th>
+                            <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Sô suất chiếu</th>
+                            <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30 text-center">Doanh thu</th>
                             <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30 text-right">Thao tác</th>
                         </tr>
                     </thead>
@@ -227,24 +247,28 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                                     </td>
 
                                     <td className="px-6 py-4">
-                                        <span className="text-body-md text-on-surface-variant">{item?.Categories.map(item => item?.name).join(', ')}</span>
+                                        <span className="text-body-md text-on-surface-variant">{formatShowCategories(item?.Categories)}</span>
                                     </td>
 
                                     <td className="px-6 py-4">
-                                        <span className="text-body-md text-on-surface-variant">{item?.duration} phút</span>
+                                        <span className="text-body-md text-on-surface-variant">Tổng: {item?.showtimes_count} suất</span>
+                                        <div className="text-body-md text-on-surface-variant">Suất mới: {item?.newShowtimes_count || 0} suất</div>
                                     </td>
 
                                     <td className="px-6 py-4 text-center">
-                                        <span 
-                                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider 
-                                                ${item.status=='showing' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}
-                                            >{changeStatus(item.status)}
-                                        </span>
+                                        {formatVND2(item?.total_revenue)}
                                     </td>
 
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
-                                            <button className="p-2 rounded-lg hover:bg-surface-container transition-all text-tertiary" 
+                                            <button className="p-2 rounded-lg hover:bg-green-100 transition-all text-tertiary" 
+                                                title="Chọn làm Trending"
+                                                onClick={()=>setShowFormTrending(item)}>
+                                                <span className="material-symbols-outlined text-[20px]" data-icon="edit">
+                                                    <TrendingUp size={20} />
+                                                </span>
+                                            </button>
+                                            <button className="p-2 rounded-lg hover:bg-yellow-100 transition-all text-tertiary" 
                                                 title="Sửa"
                                                 onClick={()=>setDataItem(item)}>
                                                 <span className="material-symbols-outlined text-[20px]" data-icon="edit">

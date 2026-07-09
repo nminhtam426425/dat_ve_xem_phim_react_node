@@ -39,6 +39,6 @@ server.get('/',(req,res)=>{
     res.status(200).json("Hello world !")
 })
 
-server.listen(process.env.PORT,()=>{
-    console.log("Server is running at port:",process.env.PORT)
+server.listen(process.env.PORT,process.env.HOST,()=>{
+    console.log(`Server is running at http://${process.env.HOST}:${process.env.PORT}`);
 })

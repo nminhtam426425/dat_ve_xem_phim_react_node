@@ -11,8 +11,7 @@ const VoucherOfUser = sequelize.define(
             type: DataTypes.INTEGER,
             primaryKey: true
         },
-        is_use: DataTypes.BOOLEAN,
-        expired_date: DataTypes.DATE
+        is_use: DataTypes.BOOLEAN
     }, 
     {
         tableName: "voucher_of_user",

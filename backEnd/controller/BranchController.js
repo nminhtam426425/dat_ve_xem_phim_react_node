@@ -1,4 +1,4 @@
-import {BranchService, MovieTheaterService} from "../service/index.js";
+import {BranchService, MovieTheaterService, TypeTheaterService} from "../service/index.js";
 
 class BranchController {
     constructor(branchController) {
@@ -53,6 +53,16 @@ class BranchController {
         }
     }
 
+    updateRoom = async (req,res) => {
+        try {
+            const {id} = req.user
+            const result = await MovieTheaterService.update(req.body, id)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
     getInfoBranch = async (req,res) => {
         try {
             const {id} = req.user
@@ -87,6 +97,53 @@ class BranchController {
     getAllTypeTheater = async (req,res) => {
         try {
             const result = await MovieTheaterService.getAllTypeTheater()
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    // tạo thể loại phòng chiếu mới
+    createTypeTheater = async (req, res) => {
+        try {
+            const result = await TypeTheaterService.create(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    updateTypeTheater = async (req, res) => {
+        try {
+            const result = await TypeTheaterService.update(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    deleteTypeTheater = async (req, res) => {
+        try {
+            const idTheater = req.params.id_theater
+            const result = await TypeTheaterService.delete(idTheater)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    updateInfoBranch = async (req, res) => {
+        try {
+            const result = await TypeTheaterService.updateInfoBranch(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    getInfomationAboutCinema = async (req, res) => {
+        try {
+            const result = await TypeTheaterService.getInfoBranch()
             res.status(200).json(result)
         } catch (error) {
             res.status(500).json({ message: error.message })

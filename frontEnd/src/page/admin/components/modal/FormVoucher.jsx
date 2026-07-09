@@ -129,7 +129,6 @@ const FormVoucher = ({dataItem,setDataItem, setDatas}) => {
     return <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 modal-content">
         <span className="close" onClick={closeModal}>&times;</span>
         <form method="POST" className="p-8 space-y-4" onSubmit={handleAddOrUpdate}>
-
             <div className="grid grid-cols-1">
                 <div className="md:col-span-8 space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

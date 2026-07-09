@@ -6,8 +6,8 @@ import {Loader2} from 'lucide-react'
 export const LoadingProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(false)
     const [message, setMessage] = useState("Đang tải dữ liệu phiên làm việc...")
-    const [infoUser, setInfoUser] = useState(null)
-  
+    const [userInfo, setUserInfo] = useState(null)
+
     const showLoading = (msg = "Đang xử lý...") => {
       setMessage(msg)
       setIsLoading(true)
@@ -16,7 +16,7 @@ export const LoadingProvider = ({ children }) => {
     const hideLoading = () => setIsLoading(false)
   
     return (
-      <LoadingContext.Provider value={{ showLoading, hideLoading }}>
+      <LoadingContext.Provider value={{ userInfo,showLoading,hideLoading,setUserInfo }}>
         {children}
         {isLoading && (
           <div style={{ 
@@ -42,5 +42,5 @@ export const useLoading = () => {
   if (!context) {
     throw new Error("useLoading phải được sử dụng bên trong LoadingProvider")
   }
-  return context;
-};
+  return context
+}

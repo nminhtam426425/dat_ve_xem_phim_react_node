@@ -1,12 +1,17 @@
 import Aside from './components/Aside'
 import ContentTicket from './components/ContentTicket'
 import Header from './components/Header'
+import AsideMobile from './components/AsideMobile'
+import EarnPoint from './components/modal/EarnPoint'
 import { useEffect, useState } from 'react'
 import { customeFetch,apiUserService } from '../config'
 
 const TicketManager = () => {
     const [datas, setDatas] = useState([])
     const [categories, setCategories] = useState([])
+    const [userEarnPoint, setUserEarnPoint] = useState(null)
+    const [earnPoint, setEarnPoint] = useState(false)
+    const [showAside, setShowAside] = useState(false)
 
     useEffect(()=>{
         const getDatas = async () => {
@@ -37,15 +42,21 @@ const TicketManager = () => {
     let propsOfContent = {
         datas,
         categories,
-        setDatas
+        earnPoint,
+        userEarnPoint,
+        setDatas,
+        setEarnPoint,
+        setUserEarnPoint
     }
 
     return <div className="bg-background text-on-background min-h-screen flex">
         <Aside/>
-        <main className="ml-64 flex-1 flex flex-col min-h-screen bg-surface-container-lowest">
-            <Header/>
+        <AsideMobile setShowAside={setShowAside} showAside={showAside}/>
+        <main className="md:ml-64 flex-1 flex flex-col min-h-screen bg-surface-container-lowest">
+            <Header setShowAside={setShowAside}/>
             <ContentTicket {...propsOfContent}/>
         </main>
+        <EarnPoint confirm={earnPoint} setConfirm={setEarnPoint} setUserEarnPoint={setUserEarnPoint}/>
     </div>
 }
 

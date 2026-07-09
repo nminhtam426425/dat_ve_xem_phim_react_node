@@ -12,11 +12,10 @@ const WatchTrailer = ({trailerUrl, setTrailerUrl}) => {
             rest = rest.substring(0, questionIndex)
         return rest
     }
-    console.log(trailerUrl)
 
     return <>
          <div className="modal" style={{display: getYouTubeId(trailerUrl) != "" ? 'flex' : 'none'}}>
-            <div className="modal-content min-w-[280px] w-[900px] h-[500px] p-4 bg-black">
+            <div className="modal-content w-[100%] md:w-[900px] h-[550px] p-8 bg-black">
                 <span className="close text-white" onClick={()=>setTrailerUrl("")}>&times;</span>
                 <iframe width="100%" height="100%" 
                     src={`https://www.youtube.com/embed/${getYouTubeId(trailerUrl)}`}

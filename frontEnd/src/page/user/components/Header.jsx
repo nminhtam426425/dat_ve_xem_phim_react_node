@@ -1,14 +1,19 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import {Film, MapPin, Tag, Receipt, Search, User, Sun, Moon} from 'lucide-react'
-import { branch } from '../../index'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {Film, MapPin, Tag, Search, User} from 'lucide-react'
+import { branch, getAccessToken } from '../../config'
+import { useLoading } from '../../../LoadingContext'
 
-export default function Navbar() {
-    const [showProfile, setShowProfile] = useState(false)
-    const [activeTab, setActiveTab] =  useState('movies')
-    const [searchQuery, setSearchQuery] =  useState('')
-    const [isDarkMode, setIsDarkMode] =  useState(true)
-    const bookedCount = 3
+export default function Navbar({searchQuery, setSearchQuery}) {
+    const location = useLocation()
+    const {userInfo} = useLoading()
+    const navigate = useNavigate()
+    const [activeTab, setActiveTab] =  useState(location?.pathname)
+    const [isDarkMode] =  useState(true)
+
+    const goToProfile = () => {
+        navigate(`/${userInfo.role}/profile`)
+    }
   
     return (
         <nav className={`sticky top-0 w-full z-50 transition-all duration-300 ${
@@ -27,145 +32,98 @@ export default function Navbar() {
             </Link>
     
             <div className="hidden md:flex items-center space-x-6">
-              <button
+              <Link
+                to='/danh-sach'
                 id="tab-movies"
                 onClick={() => setActiveTab('movies')}
                 className={`font-semibold pb-1 border-b-2 transition-all text-sm flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'movies'
+                  activeTab === '/danh-sach'
                     ? 'text-primary border-primary'
                     : 'text-neutral-500 border-transparent hover:text-primary'
                 }`}
               >
                 <Film className="w-4 h-4" />
-                Movies
-              </button>
+                Danh sách phim
+              </Link>
     
-              <button
+              <Link
+                to="/thong-tin-rap"
                 id="tab-cinemas"
-                onClick={() => setActiveTab('cinemas')}
+                onClick={() => setActiveTab('/thong-tin-rap')}
                 className={`font-semibold pb-1 border-b-2 transition-all text-sm flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'cinemas'
+                  activeTab === '/thong-tin-rap'
                     ? 'text-primary border-primary'
                     : 'text-neutral-500 border-transparent hover:text-primary'
                 }`}
               >
                 <MapPin className="w-4 h-4" />
-                Cinemas
-              </button>
+                Thông tin về rạp chiếu
+              </Link>
     
-              <button
+              <Link
+                to="/doi-thuong"
                 id="tab-offers"
-                onClick={() => setActiveTab('offers')}
+                onClick={() => setActiveTab('/doi-thuong')}
                 className={`font-semibold pb-1 border-b-2 transition-all text-sm flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'offers'
+                  activeTab === '/doi-thuong'
                     ? 'text-primary border-primary'
                     : 'text-neutral-500 border-transparent hover:text-primary'
                 }`}
               >
                 <Tag className="w-4 h-4" />
-                Offers
-              </button>
+                Đổi thưởng
+              </Link>
     
-              {/* <button
-                id="tab-tickets"
-                onClick={() => setActiveTab('tickets')}
-                className={`font-semibold pb-1 border-b-2 transition-all text-sm flex items-center gap-1.5 relative cursor-pointer ${
-                  activeTab === 'tickets'
-                    ? 'text-primary border-primary'
-                    : 'text-neutral-500 border-transparent hover:text-primary'
-                }`}
-              >
-                <Receipt className="w-4 h-4" />
-                My Tickets
-                {bookedCount > 0 && (
-                  <span className="absolute -top-1.5 -right-3 bg-primary text-white text-[10px] w-4.5 h-4.5 flex items-center justify-center rounded-full font-bold animate-pulse">
-                    {bookedCount}
-                  </span>
-                )}
-              </button> */}
+             
             </div>
     
             <div className="flex items-center space-x-4">
-              
-              <div className={`hidden lg:flex items-center px-3 py-1.5 rounded-full border transition-all ${
-                isDarkMode 
-                  ? 'bg-neutral-900/50 border-white/10 hover:border-white/25 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary' 
-                  : 'bg-neutral-100 border-black/10 hover:border-black/25 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary'
-              }`}>
-                <Search className="w-4.5 h-4.5 text-neutral-400 mr-2" />
-                <input
-                  id="search-input"
-                  type="text"
-                  placeholder="Search movies..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none outline-none focus:ring-0 text-sm w-44 placeholder:text-neutral-400 text-inherit"
-                />
-              </div>
-    
-              {/* Theme Toggle Button */}
-              {/* <button
-                id="theme-toggle"
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                title={isDarkMode ? 'Switch to Cinematic Premium Light Theme' : 'Switch to Gallery Dark Theme'}
-                className={`p-2 rounded-full cursor-pointer hover:scale-105 transition-all ${
-                  isDarkMode ? 'hover:bg-neutral-800 text-yellow-400' : 'hover:bg-neutral-100 text-neutral-600'
-                }`}
-              >
-                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button> */}
-    
-            
-              <div className="relative">
+              {
+                (location.pathname == '/' || location.pathname == '/danh-sach')
+                && 
+                <div className={`hidden lg:flex items-center px-3 py-1.5 rounded-full border transition-all ${
+                  isDarkMode 
+                    ? 'bg-neutral-900/50 border-white/10 hover:border-white/25 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary' 
+                    : 'bg-neutral-100 border-black/10 hover:border-black/25 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary'
+                }`}>
+                  <Search className="w-4.5 h-4.5 text-neutral-400 mr-2" />
+                  <input
+                    id="search-input"
+                    type="text"
+                    placeholder="Search movies..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-transparent border-none outline-none focus:ring-0 text-sm w-44 placeholder:text-neutral-400 text-inherit"
+                  />
+                </div>
+              }
+             
+             {
+                userInfo && getAccessToken()
+                ?
+                <>
+                  <button 
+                      className="flex items-center gap-3 pl-2"
+                      onClick={()=>goToProfile()}>
+                      <div className="text-right hidden sm:block">
+                          <p className="text-sm text-secondary-100">Xin chào</p>
+                          <p className="text-[14px] font-bold leading-tight">{userInfo?.fullname}</p>
+                      </div>
+                      <img alt="Admin Profile" className="w-9 h-9 rounded-full object-cover border-2 border-primary/20 shadow-sm" src={userInfo?.avatar}/>
+                  </button>
+                </>
+                :
+                <Link to="/login">
                 <button
                   id="profile-toggle"
-                  onClick={() => setShowProfile(!showProfile)}
                   className={`p-1.5 rounded-full hover:scale-105 transition-all cursor-pointer flex items-center justify-center ${
                     isDarkMode ? 'hover:bg-neutral-800' : 'hover:bg-neutral-100'
                   }`}
                 >
                   <User className="w-6 h-6 text-primary" />
                 </button>
-    
-                {showProfile && (
-                  <div className={`absolute right-0 mt-3 w-64 rounded-xl border p-4 shadow-xl transition-all z-50 ${
-                    isDarkMode 
-                      ? 'bg-neutral-950 border-white/10 text-white shadow-zinc-950' 
-                      : 'bg-white border-black/10 text-neutral-900 shadow-neutral-200'
-                  }`}>
-                    <div className="flex items-center gap-3 border-b pb-3 mb-3 border-inherit">
-                      <div className="bg-primary/25 rounded-full p-2">
-                        <Link to='/login'>
-                          <User className="w-6 h-6 text-primary" />
-                        </Link>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm">GUEST USER</h4>
-                        <span className="text-xs text-neutral-400">nminhtam425@gmail.com</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5 text-xs text-neutral-400">
-                      <div className="flex justify-between">
-                        <span>Rank:</span>
-                        <span className="text-primary font-bold">CinePro Member</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Points:</span>
-                        <span className="font-semibold text-inherit">1,240 pts</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowProfile(false);
-                        setActiveTab('tickets');
-                      }}
-                      className="w-full mt-4 py-2 font-semibold text-xs rounded-lg bg-primary hover:brightness-110 transition-all text-white cursor-pointer"
-                    >
-                      Manage My Bookings ({bookedCount})
-                    </button>
-                  </div>
-                )}
-              </div>
+              </Link>
+             }
             </div>
           </div>
         </nav>

@@ -4,7 +4,7 @@ import {branch} from "../../index"
 import {useLogout} from '../../config'
 
 const links = [
-    { id:1, label: 'Home', path: '/staff', icon: HomeIcon },
+    // { id:1, label: 'Home', path: '/staff', icon: HomeIcon },
     { id:2, label: 'Bán vé', path: '/staff/ticket', icon: CalculatorIcon },
     { id:3, label: 'Quét mã vé', path: '/staff/qr-code', icon: QrCode },
 ];
@@ -12,7 +12,7 @@ const links = [
 const Aside = () => {
     const location = useLocation()
     const logout = useLogout()
-    return <aside className="fixed left-0 top-0 h-full w-64 bg-surface border-r border-outline-variant/50 shadow-md z-50 flex flex-col py-base gap-2 hidden md:flex">
+    return <aside className="fixed left-0 top-0 h-full w-0 md:w-64 bg-surface border-r border-outline-variant/50 shadow-md z-50 flex flex-col py-base gap-2 hidden md:flex">
         <div className="pl-4 mb-4">
             <h1 className="font-headline-sm font-black text-primary-container text-2xl tracking-tight">{branch}</h1>
             <p className="text-secondary text-xs uppercase tracking-widest font-bold mt-1">Hệ thống nhân viên</p>

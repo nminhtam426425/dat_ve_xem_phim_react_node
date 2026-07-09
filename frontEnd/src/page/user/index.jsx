@@ -6,6 +6,10 @@ import DetailMovie from "./DetailMovie.jsx"
 import ProfileUser from "./ProfileUser.jsx"
 import TicketChoice from "./TicketChoice.jsx"
 import Payment from "./Payment.jsx"
+import HistoryUser from "./HistoryUser.jsx"
+import VoucherUser from "./VoucherUser.jsx"
+import ListVoucherExchange from "./ListVoucherExchange.jsx"
+import AboutUs from "./AboutUs.jsx"
 
 export {
     Home,
@@ -15,5 +19,9 @@ export {
     DetailMovie,
     ProfileUser,
     TicketChoice,
-    Payment
+    Payment,
+    HistoryUser,
+    VoucherUser,
+    ListVoucherExchange,
+    AboutUs
 }

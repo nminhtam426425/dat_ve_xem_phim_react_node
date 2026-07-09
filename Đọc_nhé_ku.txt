@@ -1,0 +1,3 @@
+Update suất chiếu, ở phần thời gian nên nếu có thay đổi thời gian cần chỉnh đổi lại tham chiếu thời gian cho phù hợp.
+
+Phân lịch sử user, xem lại tại sao ghế lại lấy nhiều quá.

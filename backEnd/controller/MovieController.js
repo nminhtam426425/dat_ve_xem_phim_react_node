@@ -14,6 +14,25 @@ class MovieController {
         }
     }
 
+    getMovieById = async (req, res) => {
+        try {
+            const idMovie = req.params.id_movie
+            const result = await this.movieService.getDetailMovie(idMovie)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    getMovieTrending = async (req, res) => {
+        try {
+            const result = await this.movieService.getMovieTrending()
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
     getForShowtime = async (req, res) => {
         try {
             const result = await this.movieService.getAllForShowtime()
@@ -54,6 +73,15 @@ class MovieController {
     deletePoster = async (req,res) => {
         try {
             const result = await this.movieService.deletePosterOnCloud(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    updateMovieTrending = async (req,res) => {
+        try {
+            const result = await this.movieService.updateMovieTrending(req.body)
             res.status(200).json(result)
         } catch (error) {
             res.status(500).json({ message: error.message })

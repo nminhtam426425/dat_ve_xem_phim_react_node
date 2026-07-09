@@ -6,37 +6,55 @@ import { toast } from 'sonner'
 import { useLoading } from '../../LoadingContext.jsx'
 
 const LoginAdmin = () => {
-    const {setInfo} = useLoading() 
     const navigate = useNavigate() 
+    const [notPassValid, setNotPassValid] = useState(true)
+    const {setUserInfo} = useLoading()
     const [isLogin,setIsLogin] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
-
     const [authen,setAuthen] = useState({
       username:"",
       password:"",
       type: ['admin','staff']
     })
 
+    const [authenError,setAuthenError] = useState({
+      username_0:"",
+      password_0:""
+    })
+
     const handleChange = (e) => {
-      handleInputOnChange(e, setAuthen, null , null)
+      handleInputOnChange(e, setAuthen, setAuthenError , setNotPassValid, "formLogin")
     }
 
     const handleLogin = (e) => { 
-      e.preventDefault() 
+       e.preventDefault() 
       const login = async () => {
         try{
           setIsLogin(pre => !pre)
-          const res = await customeFetch(apiUserService.baseURL+'/auth/login', 'non-authen','POST',JSON.stringify(authen))
-          if (res.ok) {
-            let data = await res.json()
+          const resLogin = await customeFetch(apiUserService.baseURL+'/auth/login', 'non-authen','POST',JSON.stringify(authen))
+          if (resLogin.ok) {
+            const data = await resLogin.json()
             setAccessToken(data.token)
+           
+            // login sẽ tiến hành lấy thông tin của user
+            const [resUserInfo,resUserBranch] = await Promise.all(
+              [
+                customeFetch(apiUserService.baseURL+'/users','authen','GET'),
+                customeFetch(apiUserService.baseURL+'/branches/infoBranch','authen','GET')
+              ]
+            )
 
-            const info = await customeFetch(apiUserService.baseURL+'/users','authen','GET')
-            data = await info.json()
-            if(data.role == 'admin')
+            const [dataUserInfo, dataUserBranch] = await Promise.all([resUserInfo.json(), resUserBranch.json()])
+
+            setUserInfo({
+              ...dataUserInfo,
+              ...dataUserBranch
+            })
+
+            if(dataUserInfo.role == 'admin')
               navigate("/admin")
-            else if(data.role == 'staff')
-              navigate("/staff")
+            else if(dataUserInfo.role == 'staff')
+              navigate("/staff/ticket")
             else {
               navigate('/')
             }
@@ -71,7 +89,8 @@ const LoginAdmin = () => {
                             <label className="font-label-bold text-label-bold text-on-primary-container/80 flex items-center gap-2" htmlFor="employee_id">
                                 <span className="material-symbols-outlined text-sm"></span>
                                     Username
-                                </label>
+                                  <p className={`text-white ${authenError.username_0 == 'err' ? 'text-[0px]' : 'text-[9px]'}`}>{authenError.username_0}</p>
+                              </label>
                             <div className="relative">
                                 <input 
                                 className="w-full bg-inverse-surface/50 border border-outline-variant/30 text-on-primary-container px-4 py-3 rounded-lg focus:ring-2 focus:ring-primary-container focus:border-transparent outline-none transition-all placeholder:text-tertiary" 
@@ -86,14 +105,14 @@ const LoginAdmin = () => {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <label className="font-label-bold text-label-bold text-on-primary-container/80 flex items-center gap-2" htmlFor="password">
-                                <span 
-                                  className="material-symbols-outlined text-sm"
-                                  onClick={()=>setShowPassword(pre => !pre)}>
-                                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />} 
-                                </span>
-                                    Password
+                                  <span 
+                                    className="material-symbols-outlined text-sm"
+                                    onClick={()=>setShowPassword(pre => !pre)}>
+                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />} 
+                                  </span>
+                                  Password
+                                  <p className={`text-white ${authenError.password_0 == 'err' ? 'text-[0px]' : 'text-[9px]'}`}>{authenError.password_0}</p>
                                 </label>
-                                {/* <a className="text-label-sm font-label-sm text-tertiary-fixed-dim hover:text-primary-container transition-colors" href="#">Quên mật khẩu?</a> */}
                             </div>
                             <div className="relative">
                                 <input 
@@ -109,12 +128,12 @@ const LoginAdmin = () => {
 
                         <button 
                           className={`w-full py-4 text-white rounded-lg shadow-lg transition-all flex items-center justify-center gap-2 
-                          ${isLogin 
+                          ${isLogin || notPassValid
                             ? 'bg-primary-container brightness-150 active:scale-[0.98] cursor-not-allowed' 
                             : 'bg-primary-container hover:brightness-110 active:scale-[0.98] cursor-pointer'
                           }`}
                           type="submit"
-                          disabled={isLogin}
+                          disabled={isLogin || notPassValid}
                           onClick={handleLogin}>
                                {isLogin ? '... ĐANG ĐĂNG NHẬP' : 'ĐĂNG NHẬP HỆ THỐNG'}                 
                         </button>

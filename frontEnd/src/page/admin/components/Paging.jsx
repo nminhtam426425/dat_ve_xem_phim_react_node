@@ -89,7 +89,7 @@ const Paging =  ({currentPage, setCurrentPage, totalPage, resetFilter, itemsPerP
 
     return <>
         <div className="px-6 py-4 bg-surface-container-low flex items-center justify-between border-t border-outline-variant/30">
-            <span className="text-label-sm text-secondary">Hiển thị 1-{itemsPerPage} trên {totalPage*itemsPerPage} phim</span>
+            <span className="text-label-sm text-secondary"></span>
             <div className="flex items-center gap-1">
                 <ArrowPage value='left' handlePage={handlePrePage} currentPage={currentPage} totalPage={totalPage}/>   
                 {

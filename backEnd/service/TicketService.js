@@ -1,7 +1,7 @@
-import {Tickets, Seats, Bookings, sequelize} from "../model/index.js"
+import {Tickets, Seats, Showtimes, Bookings, Movies, MovieTheater, TypeTheater, Categories, MovieCategory, VoucherOfUser} from "../model/index.js"
 import crypto from "crypto"
-import {convertObjectForUpdate} from "./validate.js"
 import {pusher} from "../authen/config.js"
+import { Op } from "sequelize"
 
 class TicketService {
     constructor(ticket) {
@@ -22,86 +22,340 @@ class TicketService {
         }
     }
 
-   createListTicket = (listChair, showtime_id) => {
-        let result = []
-        let length = listChair.length
-        for(let i = 0; i < length; i++){
-            result.push({
-                ticket_id: crypto.randomUUID(),
-                booking_id: null,
-                seat_id: listChair[i].id,
-                showtime_id: showtime_id,
-                is_scanned: 0,
-                scanned_at: null
-            })
-        }
-        return result
-   }
+    createListTicket = (listChair, showtime_id) => {
+            let result = []
+            let length = listChair.length
+            for(let i = 0; i < length; i++){
+                result.push({
+                    ticket_id: crypto.randomUUID(),
+                    booking_id: null,
+                    seat_id: listChair[i].id,
+                    showtime_id: showtime_id,
+                    is_scanned: 0,
+                    scanned_at: null
+                })
+            }
+            return result
+    }
 
-   // Đặt vé: nếu đã có booking_id thì update booking_id vào ticket, 
-   // nếu chưa có thì tạo mới booking rồi update booking_id vào ticket
-   bookingTicket = async (seat_id, showtime_id, user_id) => {
-        let result = null 
+    addMinutes = (date, minutes) => {
+        return new Date(date.getTime() + minutes*60*1000)
+    }
+
+    // Đặt vé: nếu đã có booking_id thì update booking_id vào ticket, 
+    // nếu chưa có thì tạo mới booking rồi update booking_id vào ticket
+    // type là có đăng nhập hay chưa đăng nhập
+    bookingTicket = async (seat_number, showtime_id, user_id, socket_id) => {
         try{
-            result = await sequelize.transaction(async (t) => {
-                const seat = await Tickets.findOne({
-                    where: {
-                        seat_id: seat_id,
-                        showtime_id: showtime_id
-                    },
-                        lock: t.LOCK.UPDATE, 
-                        transaction: t 
-                    })
-
-                    if (!seat) 
-                        throw new Error("Ghế không tồn tại trong suất chiếu này!")
-                
-                    if (seat.booking_id != null ) 
-                        throw new Error("Ghế này đã có người nhanh tay chọn trước!")
-
-                    const bookings = await Bookings.findOne({
-                        where: {user_id: user_id, showtime_id: showtime_id}
-                    })
-    
-                    let booking_id = ''
-                    console.log(showtime_id,user_id,seat_id)
-                    if(bookings)
-                        booking_id = bookings.id 
-                    else {
-                        const newBooking = await Bookings.create({
-                            id: crypto.randomUUID(),
-                            user_id: user_id,
-                            showtime_id: showtime_id,
-                            booking_date: new Date()
-                        })
-                        booking_id = newBooking.id
-                    }
-        
-                    if(booking_id === '')
-                        throw new Error("Đặt vé thất bại [Error_Code: 26042004]!")
-                    
-                    await seat.update({
-                        booking_id: booking_id,
-                    }, { 
-                        transaction: t 
-                    })
-                    
-                    return { seat_id, showtime_id }
+            const showtime = await Showtimes.findOne({
+                where: {id: showtime_id}
             })
+            let expired_at = this.addMinutes(new Date(), showtime.limited_number_of_minutes)
+            //let expired_at = this.addMinutes(new Date(), 5/(60*1000))
+            let result = await this.ticket.create({
+                seat_number: seat_number,
+                showtime_id:showtime_id,
+                ticket_id: crypto.randomUUID(),
+                booking_id: user_id == "" ? crypto.randomUUID() : user_id,
+                is_scanned: 0,
+                scanned_at: null,
+                expired_at: expired_at,
+                status: 'holding'
+            })
+            
+            await pusher.trigger(`showtimes-${showtime_id}`,
+                'booking_seat',
+                {
+                    showtimeId: showtime_id,
+                    seatId: [seat_number],
+                    type: 'book'
+                },
+                {
+                    socket_id: socket_id
+                }
+            )
+    
+            return {
+                result,
+                tmpIdUser: user_id == "" ? result.booking_id : "oke"
+            }
         }
         catch(err){
-            console.log(err)
-            throw new Error("Đặt vé thất bại [Error_Code: 17012004]!")
+            throw new Error(err.message)
         }
-
-        await pusher.trigger(`showtimes-${showtime_id}`,'booking_seat',{
-            showtimeId: showtime_id,
-            seatId: seat_id
-        })
-
-        return result
     }
    
+    // xoá vé khi re-click
+    unBooking = async (seat_number, showtime_id, socket_id) => {
+        try{
+            let result = await this.ticket.destroy({
+                where: {
+                    seat_number: seat_number,
+                    showtime_id: showtime_id
+                }
+            })
+
+            await pusher.trigger(`showtimes-${showtime_id}`,
+                'booking_seat',
+                {
+                    showtimeId: showtime_id,
+                    seatId: [seat_number],
+                    type: 'unbook'
+                },
+                {
+                    socket_id: socket_id
+                }
+            )
+           
+            return result
+        }
+        catch(err){
+            throw new Error(err.message)
+        }
+    }
+
+    // xóa vé, gửi đến các user cùng suất chiếu
+    deleteTicketExpired = async (showtime_id, seats_number, socket_id) => {
+        let result =  await this.ticket.destroy({
+            where: {
+                expired_at: {
+                    [Op.lt]: new Date()
+                },
+                status: 'holding',
+                showtime_id: showtime_id
+            }
+        })
+        // xóa hết các ghế tương ứng của user
+        // vì seats_id là mảng rồi nên không tạo mảng mảng như các hàm trên
+        await pusher.trigger(`showtimes-${showtime_id}`,
+            'booking_seat',
+            {
+                showtimeId: showtime_id,
+                seatId: seats_number,
+                type: 'unbook'
+            },
+            {
+                socket_id: socket_id
+            }
+        )
+        return result
+    }
+
+    // chưa xử lý voucher
+    paymentSuccess = async (idUser,showtime_id,price_at_booking,role,userEarnPoint=null,useVoucher) => {
+        let dataForCreate = {
+            id: crypto.randomUUID(),
+            user_id: role == 'user' ? idUser : userEarnPoint?.id || null,
+            staff_id: role == 'staff' ? idUser : null,
+            showtime_id: showtime_id,
+            payment_status: 'paid',
+            price_at_booking: price_at_booking
+        }
+
+        // cập nhật - tạo mới voucher sử dụng
+        if(useVoucher.length > 0){
+            let pubVoucher = useVoucher.find(item => item.type == 'public')
+            let privateVoucher = useVoucher.find(item => item.type == 'private')
+
+            if(privateVoucher){
+                // cập nhật lại voucher cá nhân
+                await VoucherOfUser.update(
+                    {
+                        is_use: 1
+                    },
+                    {
+                        where: {
+                            user_id: idUser,
+                            voucher_id: privateVoucher.id
+                        }
+                    }
+                )
+            }
+
+            if(pubVoucher){
+                // thêm voucher public đã qua sử dụng 
+                await VoucherOfUser.create({
+                    user_id: idUser,
+                    voucher_id: pubVoucher.id,
+                    is_use: 1
+                })
+            }
+        }
+
+        let result = await Bookings.create(dataForCreate)
+        await this.ticket.update(
+            {
+                booking_id: result.id,
+                status: 'paid'
+            },
+            {
+                where: {
+                    showtime_id: showtime_id,
+                    booking_id: idUser
+                }
+            }
+        )
+        return result
+    }
+
+    // lịch sử đặt vé của người dùng
+    historyOfUser = async (idUser) => {
+        let result =  await Bookings.findAll({
+            attributes:['id','price_at_booking'],
+            where: {
+                user_id: idUser
+            },
+            include:[
+                {
+                    model: Showtimes,
+                    attributes:['id','start_time'],
+                    include: [
+                        {
+                            model: Movies,
+                            attributes: ['title','poster_url']
+                        },
+                        {
+                            model: MovieTheater,
+                            attributes: ['name'],
+                            include: [
+                                {
+                                    model: TypeTheater,
+                                    attributes: ['type_name']
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: Tickets,
+                    attributes: ['seat_number']
+                }
+            ]
+        })
+        return result
+    }
+
+    // dùng riêng có cấu trúc đặc biệt của arr
+    findMax = (arr) => {
+        if(!arr) return 
+        let max = 0
+        for(let i of arr){
+            if(i.age_permit > max)
+                max = i.age_permit
+        }
+        return max
+    }
+    // check tuổi
+    getAgePermit = async (idMovie) => {
+        let result = await Movies.findOne({
+            attributes: [],
+            include: [
+                {
+                    model: Categories,
+                    attributes: ['age_permit'],
+                    through: {
+                        attributes: [],
+                    }
+                }
+            ],
+            where: {
+                id: idMovie
+            }
+        })
+        return this.findMax(result.Categories)
+    }
+
+    //check vé, ùng cho staff
+    checkTicket = async (qrCode) => {
+        let result = await Bookings.findOne({
+            where: {
+                id: qrCode
+            },
+            include:[
+                {
+                    model: Showtimes,
+                    attributes:['id','start_time'],
+                    include: [
+                        {
+                            model: Movies,
+                            attributes: ['id','title']
+                        },
+                        {
+                            model: MovieTheater,
+                            attributes: ['name'],
+                            include: [
+                                {
+                                    model: TypeTheater,
+                                    attributes: ['type_name']
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: Tickets,
+                    attributes: ['seat_number']
+                }
+            ]
+        })
+        let message = ""
+       
+        // nếu không có result: có thể tách vé - dựa vào ticket_id để check
+        // nếu cả 2 không có ==> vé không hợp lệ
+        if(!result){
+            let ticket = await Tickets.findOne({
+                where:{
+                    ticket_id: qrCode
+                }
+            })
+            if(!ticket){
+                message = "Vé không hợp lệ !"
+                return {
+                    type: 'error',
+                    message: message
+                }
+            }
+        }
+
+        let checkDay = new Date(result.Showtime.start_time)
+        
+        if(new Date() - checkDay > 0){
+            message = `Quá thời gian suất chiếu\nPhim: ${result.Showtime.Movie.title}\nThời gian: ${result.Showtime.start_time}`
+            return {
+                type: 'error',
+                message: message
+            }
+        }
+
+        let ticket = await Tickets.findOne({
+            where: {
+                booking_id: result.id,
+                showtime_id: result.showtime_id
+            }
+        })
+       
+        // kiểm tra xem vé đã scan chưa
+        if(ticket.is_scanned == 1){
+            message = "Vé đã sử dụng !"
+            return {
+                type: 'error',
+                message: message
+            }
+        }
+
+        let maxAge = await this.getAgePermit(result.Showtime.Movie.id)
+        
+        return {
+            type: 'success',
+            data: {
+                title: result.Showtime.Movie.title,
+                theater: `${result.Showtime.MovieTheater.name} (${result.Showtime.MovieTheater.TypeTheater.type_name})`,
+                start_time: result.Showtime.start_time,
+                seats: result.Tickets.map( item => item.seat_number).join(', '),
+                maxAge: maxAge
+            }
+        }
+    }
 }
 
 export default new TicketService(Tickets)

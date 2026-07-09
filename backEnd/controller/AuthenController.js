@@ -17,6 +17,21 @@ class AuthenController {
         }
     }
     
+    loginWithGoogle = async (req, res) => {
+        try {
+            const result = await AuthenService.loginWithGoogle(req.body)
+            res.cookie('refreshToken', result.refreshToken, {
+                httpOnly: true,  // Ngăn JavaScript truy cập
+                secure: false,    // Chỉ gửi qua HTTPS 
+                sameSite: 'strict', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
+                maxAge: 24 * 60 * 60 * 1000
+            })
+            res.status(200).json({token: result.token})
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+    
     refreshToken = async (req, res) => {
         try {
             const refreshToken = req.cookies.refreshToken

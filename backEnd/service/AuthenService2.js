@@ -1,6 +1,8 @@
 import {User} from "../model/index.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import 'dotenv/config'
+import {OAuth2Client} from 'google-auth-library'
 
 class AuthenService {
     login = async ({username, password, type}) => {
@@ -18,6 +20,60 @@ class AuthenService {
             
             const token = this.createToken(userLogin.id, userLogin.role)
             const refreshToken = this.createTokenRefresh(userLogin.id, userLogin.role)
+            return {
+                token,
+                refreshToken
+            }
+        }
+        catch(err){
+            throw new Error(err.message)
+        }
+    }
+
+    createAccountWithGoogle = async (payload) => {
+        const idUser = await User.findOne({
+            where: {
+                id: payload['sub']
+            }
+        })
+        
+        if(!idUser){
+            let email = payload['email']
+            const passHash = await bcrypt.hash(email, Number(process.env.SALT_ROUNDS))
+            await User.create({
+                id: payload['sub'],
+                fullname: payload['name'],
+                username: email,
+                password: passHash,
+                email: email,
+                avatar: payload['picture'],
+                pub_id_avatar: ""
+            })
+            return
+        }
+
+        if(idUser.is_activating == 0)
+            throw new Error("Tài khoản đã bị khóa !")
+
+    } 
+
+    loginWithGoogle = async ({idToken}) => {
+        try{
+            let idClient = process.env.GOOGLE_CLIENT_ID
+            const client = new OAuth2Client(idClient)
+            const ticket = await client.verifyIdToken({
+                idToken: idToken,
+                audience: idClient, 
+            })
+            
+            const payload = ticket.getPayload()
+            await this.createAccountWithGoogle(payload)
+
+            const userid = payload['sub']
+
+            const token = this.createToken(userid, 'user') 
+            const refreshToken = this.createTokenRefresh(userid, 'user')
+        
             return {
                 token,
                 refreshToken

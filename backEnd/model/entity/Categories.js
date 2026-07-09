@@ -5,7 +5,8 @@ const Categories = sequelize.define(
     {
         id:{
             type: DataTypes.INTEGER,
-            primaryKey: true
+            primaryKey: true,
+            autoIncrement: true
         },
         name:DataTypes.STRING(100),
         age_permit: DataTypes.INTEGER

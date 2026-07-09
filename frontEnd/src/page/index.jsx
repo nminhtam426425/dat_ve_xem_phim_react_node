@@ -1,5 +1,5 @@
 import { createBrowserRouter, ScrollRestoration } from 'react-router-dom'
-import {Home, Login, Register, ListShowtime, DetailMovie, ProfileUser, TicketChoice, Payment} from './user/index.jsx'
+import {Home, Login, Register, ListShowtime, DetailMovie, ProfileUser, TicketChoice, HistoryUser, VoucherUser, ListVoucherExchange,AboutUs} from './user/index.jsx'
 import {
   LoginAdmin, 
   MovieManager,
@@ -11,7 +11,10 @@ import {
   Home as HomeAdmin,
   ProtectedRoute,
   Profile,
-  VoucherManager
+  VoucherManager,
+  CategoryManager,
+  TypeTheaterManager,
+  InfomationBranch
 } 
 from './admin/index.jsx'
 import {Home as HomeStaff} from './staff/index.jsx'
@@ -23,6 +26,10 @@ const router = createBrowserRouter([
     {
       path: '/',
       element: <Home />,
+    },
+    {
+      path: '/thong-tin-rap',
+      element: <AboutUs />,
     },
     {
       path: '/login',
@@ -51,13 +58,6 @@ const router = createBrowserRouter([
       </>
     },
     {
-      path: '/user/profile/test',
-      element: <>
-        <ProfileUser/>
-        <ScrollRestoration />
-      </>
-    },
-    {
       path: '/chon-ghe',
       element: <>
         <TicketChoice/>
@@ -65,21 +65,29 @@ const router = createBrowserRouter([
       </>
     },
     {
-      path: '/thanh-toan',
+      path: '/doi-thuong',
       element: <>
-        <Payment/>
+        <ListVoucherExchange/>
         <ScrollRestoration />
       </>
     },
-    // {
-    //   element: <ProtectedRoute allowedRoles={['user']}/>,
-    //   children: [
-    //     {
-    //       path: '/user/profile',
-    //       element: <ProfileUser/> ,
-    //     }
-    //   ]
-    // },
+    {
+      element: <ProtectedRoute allowedRoles={['user']}/>,
+      children: [
+        {
+          path: '/user/profile',
+          element: <ProfileUser/> ,
+        },
+        {
+          path: '/user/history',
+          element: <HistoryUser/> ,
+        },
+        {
+          path: '/user/my-voucher',
+          element: <VoucherUser/> ,
+        }
+      ]
+    },
     {
       element: <ProtectedRoute allowedRoles={['staff']}/>,
       children: [
@@ -92,7 +100,7 @@ const router = createBrowserRouter([
           element: <QrCodeManager/> ,
         },
         {
-          path: '/staff',
+          path: '/staff/profile',
           element: <HomeStaff/> ,
         }
       ]
@@ -127,6 +135,18 @@ const router = createBrowserRouter([
         {
           path: '/admin/voucher',
           element: <VoucherManager/> ,
+        },  
+        {
+          path: '/admin/categories',
+          element: <CategoryManager/> ,
+        },
+        {
+          path: '/admin/type-theater',
+          element: <TypeTheaterManager/> ,
+        },
+        {
+          path: '/admin/about-us',
+          element: <InfomationBranch/> ,
         },
       ],
     },

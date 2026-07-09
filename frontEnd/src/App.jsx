@@ -2,15 +2,21 @@ import { RouterProvider } from 'react-router-dom'
 import {router} from './page/index'
 import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
-import {handleSilentRefresh} from './page/config.js'
-import { LoadingProvider } from './LoadingContext.jsx'
+import {handleSilentRefresh, customeFetch, apiUserService} from './page/config.js'
+import { useLoading } from './LoadingContext.jsx'
 
 function App() {
+ 
   const [isLoading, setIsLoading] = useState(true)
-
+  const {setUserInfo} = useLoading()
   useEffect(() => {
     const checkAuth = async () => {
       await handleSilentRefresh()
+      const res = await customeFetch(apiUserService.baseURL+'/users','authen','GET')
+      if(res.ok){
+        const data = await res.json()
+        setUserInfo(data)
+      }
       setIsLoading(false)
     }
     checkAuth()
@@ -34,10 +40,8 @@ function App() {
 
   return (
     <>
-    <LoadingProvider>
       <Toaster richColors position="top-right"/>
       <RouterProvider router={router} />
-    </LoadingProvider>
     </>
   );
 }

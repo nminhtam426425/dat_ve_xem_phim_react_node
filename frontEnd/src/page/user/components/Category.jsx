@@ -2,14 +2,9 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {customeFetch, apiUserService} from "../../config"
 
-const Category = ({type, idChosen}) => {
+const Category = ({type, idChosen="0", setSelectedCategory}) => {
     const [categories, setCategories] = useState([])
     const navigate = useNavigate()
-    const [idCategorySelect, setIdCategorySelect] = useState('none')
-
-    useEffect(()=>{
-        (idChosen) ? setIdCategorySelect(idChosen) : setIdCategorySelect('none')
-    },[idChosen])
 
     const goToListByCategory = (idCagory) => {
         navigate('/danh-sach',{state: {idCategory: idCagory}})
@@ -21,7 +16,7 @@ const Category = ({type, idChosen}) => {
         if(type=='router')
             goToListByCategory(idCategory)
         else
-            setIdCategorySelect(idCategory)
+            setSelectedCategory(idCategory)
     }
 
     useEffect(()=>{
@@ -44,16 +39,16 @@ const Category = ({type, idChosen}) => {
         <section className="py-base max-w-[1280px] mx-auto relative z-20">
             <div className="flex items-center space-x-3 flex-wrap gap-2">
                 <button className={`px-6 py-3 rounded-full font-label-sm 
-                    ${idCategorySelect == 'none' 
+                    ${idChosen == '0' 
                     ? 'bg-primary-container text-white whitespace-nowrap' 
                     : 'bg-surface-container2 hover:bg-surface-container2-high text-zinc-400 hover:text-white'}`}
-                    onClick={()=>handle('none')}>Tất cả</button>
+                    onClick={()=>handle('0')}>Tất cả</button>
                     {
                             categories.map( item =>
                                 <button
                                     key={item.id} 
                                     className={`px-6 py-3 rounded-full font-label-sm 
-                                        ${idCategorySelect == item.id
+                                        ${idChosen == item.id
                                         ? 'bg-primary-container text-white whitespace-nowrap' 
                                         : 'bg-surface-container2 hover:bg-surface-container2-high text-zinc-400 hover:text-white'}`}
                                     onClick={()=>handle(item.id)}>

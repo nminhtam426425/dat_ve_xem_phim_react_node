@@ -9,15 +9,28 @@ import {customeFetch, apiUserService} from '../config.js'
 const MovieManager = () => {
     const [datas, setDatas] = useState([])
     const [categories, setCategories] = useState([])
+    const [movieTrending, setMovieTrending] = useState(null)
+
     useEffect(()=>{
         const getDatas = async () => {
             try{
                 const res = await customeFetch(apiUserService.baseURL+'/movies/all','authen','GET')
                 const res2 = await customeFetch(apiUserService.baseURL+'/categories/all','non-authen','GET')
-                if(res.ok){
+                const res3 = await customeFetch(apiUserService.baseURL+'/movies/trending','non-authen','GET')
+                if(res.ok && res3.ok){
                     const data = await res.json()
+                    const data2 = await res3.json()
+
                     let temp = data.sort( (a,b) => new Date(b.release_date) - new Date(a.release_date))
-                    setDatas(temp)
+                    let trendingMovie = {}
+
+                    if(data2[0]){
+                        trendingMovie = data.find(item => item.id == data2[0].movie_id)
+                        setDatas(temp.filter(item => item.id != trendingMovie.movie_id))
+                        setMovieTrending(trendingMovie)
+                    }
+                    else    
+                        setDatas(temp)
                 }
                 if(res2.ok){
                     const data = await res2.json()
@@ -34,7 +47,8 @@ const MovieManager = () => {
     const [dataItemBeforeConfirm, setDataItemBeforeConfirm] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [confirm, setConfirm] = useState(null)
-    const itemsPerPage = 4
+    const [showFormTrending, setShowFormTrending] = useState(null)
+    const itemsPerPage = 5
 
     let propsOfContentMovie = {
         datas,
@@ -42,10 +56,12 @@ const MovieManager = () => {
         itemsPerPage,
         categories,
         dataItemBeforeConfirm,
+        movieTrending,
         setConfirm,
         setDataItem: setDataMovie,
         setCurrentPage,
-        setDataItemBeforeConfirm
+        setDataItemBeforeConfirm,
+        setShowFormTrending
     }
 
     let propsOfConfirm = {
@@ -65,6 +81,7 @@ const MovieManager = () => {
         </main>
         <Modal styleModal="movie" dataItem={dataMovie} setDataItem={setDataMovie} datas={datas} setDatas={setDatas} categories={categories}/>
         <ConfirmBox {...propsOfConfirm}/>
+        <Modal styleModal="trending" dataItem={showFormTrending} setDataItem={setShowFormTrending} setMovieTrending={setMovieTrending}/>
     </div>
 }
 

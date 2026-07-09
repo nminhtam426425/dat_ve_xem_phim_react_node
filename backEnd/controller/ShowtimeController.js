@@ -81,6 +81,36 @@ class ShowtimeController {
             res.status(500).json({ message: error.message })
         }
     }
+
+    getListShowtimeForHome = async (req,res) => {
+        try {
+            const result = await this.showtimeService.getListShowtimeForHome()
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    getShowtimeByMovie = async (req,res) => {
+        try {
+            let idMovie = req.params.id_movie
+            let date = req.params.date
+            const result = await this.showtimeService.getShowtimeByMovie(idMovie, date)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
+    getShowtimeByCates = async (req,res) => {
+        try {
+            const result = await this.showtimeService.getShowtimeByCates(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
 }
 
 export default new ShowtimeController(ShowtimeService)

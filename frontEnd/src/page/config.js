@@ -1,6 +1,6 @@
-import {getAccessToken, setAccessToken} from './tokenStore'
+import {getAccessToken, setAccessToken, getTmpId,setTmpId} from './tokenStore'
 import {useNavigate} from 'react-router-dom'
-import {notPassValidFormMovie, messageErrorFormMovie} from './validateForm'
+import {notPassValidForm, messageErrorForm} from './validateForm'
 import Pusher from 'pusher-js'
 
 const branch = 'CINESTU'
@@ -41,7 +41,7 @@ const customeFetch = async (url, type, method, body={}) => {
 
       if (res.status === 401) {
         try {
-            const refreshResponse = await fetch(apiUserService+'/auth/refreshToken', {
+            const refreshResponse = await fetch(apiUserService.baseURL+'/auth/refreshToken', {
               method: 'POST',
               credentials: 'include' // Bắt buộc phải có để gửi cookie đi kèm theo refreshToken
             })
@@ -70,31 +70,40 @@ const customeFetch = async (url, type, method, body={}) => {
   return res
 }
 
-const handleInputOnChange = (e, setState, setError, setNotPassValid) => {
+const handleInputOnChange = (e, setState, setError, setNotPassValid, type) => {
   const { id, value } = e.target
-  
+
   if(setError){
     const idInputError = id + '_0'
     let errorMessage = ""
-  
-    if (notPassValidFormMovie(idInputError, value)) 
-      errorMessage = messageErrorFormMovie(idInputError)
-  
-    setError(preErrors => {
-      const nextErrors = {
-        ...preErrors,
-        [idInputError]: errorMessage
-      };
-  
-      // Kiểm tra toàn bộ form xem có lỗi nào không (bỏ qua khoảng trắng dư thừa nếu có)
-      const isValid = Object.values(nextErrors).every(err => err.trim() === "");
+    if (notPassValidForm(idInputError, value, type)) {
+      errorMessage = messageErrorForm(idInputError, type)
+      setError(preErrors => {
+          const nextErrors = {
+            ...preErrors,
+            [idInputError]: errorMessage
+          }
+          const isValid = Object.values(nextErrors).every(err => String(err || "").trim() === "")
+          setNotPassValid(!isValid)
+          return nextErrors
+      })
+    }
+    else{
+      setError(preErrors => {
+        const nextErrors = {
+          ...preErrors,
+          [idInputError]: ''
+        }
+
+        // Kiểm tra toàn bộ form xem có lỗi nào không (bỏ qua khoảng trắng dư thừa nếu có)
+        const isValid = Object.values(nextErrors).every(err => String(err || "").trim() === "")
+        setNotPassValid(!isValid)
+        return nextErrors
+      })
+    }
       
-      // Nếu VALID hoàn toàn (isValid = true) thì NOT_PASS = false (cho phép nhấn nút)
-      setNotPassValid(!isValid)
-  
-      return nextErrors
-    })
   }
+ 
   setState(pre => ({
     ...pre,
     [id]: value
@@ -103,13 +112,13 @@ const handleInputOnChange = (e, setState, setError, setNotPassValid) => {
 
 const handleSilentRefresh = async () => {
   try {
-    const response = await fetch(apiUserService.baseURL+'/auth/refreshToken', {
+    let response = await fetch(apiUserService.baseURL+'/auth/refreshToken', {
       method: 'POST',
       credentials: 'include', 
     })
 
     if (response.ok) {
-      const data = await response.json()
+      let data = await response.json()
       setAccessToken(data.token)
       return data.token
     }
@@ -135,7 +144,7 @@ const useLogout = () => {
         } catch (error) {
             console.error("Lỗi khi gọi API logout:", error)
         } finally {
-            setAccessToken(null);
+            setAccessToken(null)
             navigate('/', { replace: true })
         }
     }
@@ -211,6 +220,16 @@ const uploadCloudinary = async (image) => {
     return response
 }
 
+const removeVietnameseTones = (str) => {
+  if(!str) return ""
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") 
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
+
 export {
     branch,
     apiUserService,
@@ -224,5 +243,8 @@ export {
     handleDeleteData,
     handleUpdateData,
     uploadCloudinary,
-    useLogout
+    useLogout,
+    removeVietnameseTones,
+    setTmpId,
+    getTmpId
 }

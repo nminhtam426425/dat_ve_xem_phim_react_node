@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import {ChevronDown} from "lucide-react"
 import {Save} from 'lucide-react'
 import { toast } from "sonner"
-import { handleInputOnChange, customeFetch,apiUserService, handleAddData } from "../../../config"
+import { handleInputOnChange, customeFetch,apiUserService, handleAddData, handleUpdateData } from "../../../config"
 import { useLoading } from "../../../../LoadingContext.jsx"
 
 function getName(countStandard, countVIP, countSweetbox) {
@@ -12,7 +12,6 @@ function getName(countStandard, countVIP, countSweetbox) {
 
     if((std + vip + sweet) > 26)
         return -1
-    
 
     const alphabet = Array.from({ length: 26 }, (_, i) =>
       String.fromCharCode(65 + i)
@@ -48,30 +47,6 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
     })
 
     useEffect(()=>{
-        if(dataItem?.id){
-            setTheater({
-                name: dataItem.name || "",
-                count_per_row: dataItem.count || 2,
-                countStandard : dataItem.countStandard || 1,
-                countVIP: dataItem.countVIP || 1,
-                countSweetbox: dataItem.countSweetbox || 1
-            })
-            setIdType(dataItem?.TypeTheater?.id)
-            setDescTheater(typeTheater[dataItem?.TypeTheater?.id]?.description)
-        }
-        else{
-            setTheater({
-                name:'',
-                count_per_row:2,
-                countStandard : 1,
-                countVIP: 1,
-                countSweetbox: 1
-            })
-            setIdType("0")
-        }
-    },[dataItem])
-
-    useEffect(()=>{
         const getTheaterOnBranch = async () => {
             try{
                 const res = await customeFetch(apiUserService.baseURL+'/branches/type/theater','non-authen','GET')
@@ -86,6 +61,32 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
         }
         getTheaterOnBranch()
     },[])
+
+    useEffect(()=>{
+        if(dataItem?.id){
+            setTheater({
+                name: dataItem.name || "",
+                count_per_row: dataItem.count || 2,
+                countStandard : dataItem.countStandard || 1,
+                countVIP: dataItem.countVIP || 1,
+                countSweetbox: dataItem.countSweetbox || 1
+            })
+            setIdType(dataItem?.TypeTheater?.id)
+            let temp = typeTheater.find(item => item.id == dataItem?.TypeTheater?.id)
+            setDescTheater(temp.description)
+        }
+        else{
+            setTheater({
+                name:'',
+                count_per_row:2,
+                countStandard : 1,
+                countVIP: 1,
+                countSweetbox: 1
+            })
+            setIdType("0")
+            setDescTheater("")
+        }
+    },[dataItem])
 
     const closeModal = () => {
         setDataItem(null)
@@ -110,8 +111,21 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
         let dataForApi = {}
         if(dataItem?.id){
             method = 'PUT'
-            dataForApi= {
-
+            let arrChair = getName(theater.countStandard, theater.countVIP,theater.countSweetbox)
+            if(arrChair == -1){
+                toast.error("Số hàng ghế không phù hợp trong hệ thống")
+                setIsActivate(false)
+            }
+            dataForApi = {
+                room_id: dataItem.id,
+                name: theater.name,
+                type: idType,
+                countStandard: theater.countStandard,
+                countVIP: theater.countVIP,
+                countSweetbox: theater.countSweetbox,
+                arrName: arrChair,
+                arrType: ['Standard','VIP','Sweetbox'],
+                chairPerLine: theater.count_per_row
             }
         }
         else{
@@ -130,25 +144,36 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                 arrType: ['Standard','VIP','Sweetbox'],
                 chairPerLine: theater.count_per_row
             }
-            try{
-                const res = await customeFetch(apiUserService.baseURL+'/branches/room','authen','POST',JSON.stringify(dataForApi))
-                if(res.ok){
-                    const data = await res.json()
-                    dataForApi.id = data.id
-                    dataForApi.TypeTheater = {}
-                    dataForApi.TypeTheater.id = data.type
-                    dataForApi.TypeTheater.type_name = data.type_name
-                    handleAddData(setDatas, dataForApi)
-                    setDataItem(null)
-                    toast.success("Thêm phòng chiếu thành công !")
+        }
+        try{
+            const res = await customeFetch(apiUserService.baseURL+'/branches/room','authen',method,JSON.stringify(dataForApi))
+            if(res.ok){
+                const data = await res.json()
+                dataForApi.id = data.id
+                dataForApi.TypeTheater = {}
+                dataForApi.TypeTheater.id = data.type
+                dataForApi.TypeTheater.type_name = data.type_name
+                dataForApi.TypeTheater.description = data.description
+                if(dataItem.id){
+                    console.log(dataForApi)
+                    toast.success("Cập nhật phòng chiếu thành công !")
+                    handleUpdateData(setDatas,'id',data.id,dataForApi)
                 }
-                else
-                    toast.error("Thêm phòng chiếu thất bại !")
+                else{
+                    toast.success("Thêm phòng chiếu thành công !")
+                    handleAddData(setDatas, dataForApi)
+                }
+                setDataItem(null)
+                
             }
-            catch(err){
-                console.log(err)
-                toast.error("Thêm phòng chiếu thất bại !")
+            else{
+                const data = await res.json()
+                toast.error(data.message)
             }
+        }
+        catch(err){
+            console.log(err)
+            toast.error("Thêm phòng chiếu thất bại !")
         }
         hideLoading()
     }

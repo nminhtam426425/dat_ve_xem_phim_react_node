@@ -8,23 +8,20 @@ const User = sequelize.define(
             primaryKey: true
         },
         fullname:DataTypes.STRING(100),
-        email: {
-            type: DataTypes.STRING(100),
-            validate: {
-                isEmail: true,
-            }
-        },
+        email: DataTypes.STRING(100),
         username: {
-            type:DataTypes.STRING(100),
+            type:DataTypes.STRING(50),
             unique: true
         },
         password:DataTypes.TEXT,
         phone: DataTypes.STRING(10),
         avatar: DataTypes.TEXT,
+        pub_id_avatar: DataTypes.TEXT,
         role: DataTypes.ENUM('user', 'staff', 'admin', 'super_admin'),
         reward_points: DataTypes.INTEGER,
         is_activating: DataTypes.INTEGER,
-        created_at: DataTypes.DATE
+        created_at: DataTypes.DATE,
+        birthday: DataTypes.DATE
     }, 
     {
         tableName: "users",

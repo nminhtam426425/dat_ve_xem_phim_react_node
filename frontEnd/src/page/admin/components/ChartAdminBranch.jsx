@@ -20,22 +20,38 @@ ChartJS.register(
   Title,
   Tooltip,
   Filler
-);
+)
 
-const ChartAdminBranch = () => {
+const findMax = (array) => {
+  if(!array) return 0
+  let max = 0
+
+  for(let i of array){
+    if(i > max)
+      max = i
+  }
+    
+  return Math.ceil(max) + average(array)
+}
+
+const average = (array) => {
+  if(!array) return 0   
+  let length = array.length
+  let sum = 0
+  for(let i of array){
+    sum+=parseInt(i)
+  }
+  return Math.floor((sum/length)*2)
+}
+
+const ChartAdminBranch = ({valuesRevenue, typeMark}) => {
   const chartRef = useRef(null);
   const [chartData, setChartData] = useState({ datasets: [] });
 
-  // Giả lập dữ liệu nhận về từ Back-end (Phù hợp với cấu trúc tư duy đã bàn)
-  const backendData = {
-    labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
-    values: [62.5, 31.25, 125, 75, 187.5, 156.25, 218.75] // Thứ ương đương với các điểm cong cũ của bạn
-  };
-
-//   const backendData = {
-//     labels: ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'],
-//     values: [100, 150.2, 80, 20] 
-//   };
+  const backendDataLabels = {
+    weeks: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
+    months: ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4']
+  }
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -52,11 +68,11 @@ const ChartAdminBranch = () => {
     gradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); 
 
     setChartData({
-      labels: backendData.labels,
+      labels: backendDataLabels[typeMark],
       datasets: [
         {
           label: 'Doanh thu',
-          data: backendData.values,
+          data: valuesRevenue,
           backgroundColor: gradient,
           borderColor: primaryColor,
           fill: true,
@@ -69,10 +85,9 @@ const ChartAdminBranch = () => {
           pointBorderWidth: 2,
         },
       ]
-    });
-  }, []);
+    })
+  }, [valuesRevenue])
 
-  // Cấu hình các trục hiển thị của Chart.js để khớp với Tailwind cũ của bạn
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -100,13 +115,13 @@ const ChartAdminBranch = () => {
       },
       y: {
         min: 0,
-        max: 250, // Định mức cao nhất là 250M giống thiết kế của bạn
+        max: findMax(valuesRevenue),
         ticks: {
-          stepSize: 50, // Chia đều khoảng cách mỗi ô là 50 (0, 50, 100, 150, 200, 250)
+          stepSize: average(valuesRevenue), 
           color: 'rgba(100, 116, 139, 0.6)', // Màu chữ trục Y text-secondary/60
           font: { size: 10 },
           callback: function(value) {
-            return value === 0 ? '0' : value + 'M'; // Thêm chữ 'M' vào sau số
+            return value === 0 ? '0' : parseFloat(value / 1000000).toFixed(1) + 'M';
           }
         },
         grid: {

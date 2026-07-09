@@ -1,7 +1,7 @@
 import {ChevronDown, Clock} from "lucide-react"
 import { useState, useEffect } from "react"
 import { customeFetch, apiUserService } from "../../../config"
-import {formatVND2} from "../../../validate"
+import {formatVND2, formatDateHour} from "../../../validate"
 import {useLoading} from "../../../../LoadingContext"
 import { toast } from "sonner"
 
@@ -44,24 +44,54 @@ const formatHourAndMinute = (time) => {
     return `${hour}:${minute}`
 }
 
-const handleAddShowtimeAfterBE = (pre, idRoom ,onDateSelect ,theaterState, idNew, titleMovie) => {
+const handleAddShowtimeAfterBE = (pre, data ,titleMovie) => {
     if (!pre) return []
-
     return pre.map(room => {
-        if (room.room_id == idRoom) {
-            console.log(room)
+        if (room.room_id == data.room_id) {
             return {
                 ...room,
                 showtimes: [
                     ...(room.showtimes || []), 
                     {
-                        id: idNew,
+                        id: data.id,
                         name: titleMovie,
-                        startTime: `${onDateSelect} ${theaterState.startTime}`,
-                        endTime: `${onDateSelect} ${theaterState.endTime}`,
+                        movie_id: data.movie_id,
+                        room_id: data.room_id,
+                        startTime: formatDateHour(data.start_time),
+                        endTime: formatDateHour(data.end_time),
                         sold: 0,
+                        price: data.price,
+                        max_tickets: data.max_tickets,
+                        point: data.point
                     }
                 ]
+            }
+        }
+        return room
+    })
+}
+
+const handleUpdateShowtimeAfterBE = (pre, idRoom ,onDateSelect ,theaterState, idUpdate, titleMovie) => {
+    if (!pre) return []
+
+    return pre.map(room => {
+        if (room.room_id == idRoom) {
+            return {
+                ...room,
+                showtimes: room.showtimes.map(showtime => {
+                    if(showtime.id == idUpdate){
+                        return {
+                            ...showtime,
+                            name: titleMovie,
+                            startTime: `${onDateSelect} ${theaterState.startTime}`,
+                            endTime: `${onDateSelect} ${theaterState.endTime}`,
+                            price: theaterState.price,
+                            max_tickets: theaterState.max_tickets,
+                            point: theaterState.point
+                        }
+                    }
+                    return showtime
+                })
             }
         }
         return room
@@ -84,8 +114,17 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
     })
 
     useEffect(()=>{
-        if(dataItem){
-           
+        if(dataItem?.id){
+            setShowtime({
+                startTime: dataItem?.startTime?.substring(11,19),
+                endTime: dataItem?.endTime?.substring(11,19),
+                price: Number(dataItem.price),
+                max_tickets: dataItem.max_tickets,
+                point: dataItem.point
+            })
+            setIdMovie(dataItem?.movie_id || "0")
+            setIdTheater(dataItem?.room_id || "0")
+            setMovieDuration(getDuration(dataForm.movies, dataItem.movie_id))
         }
         else{
             setShowtime({
@@ -95,9 +134,9 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                 max_tickets: 4,
                 point: 1
             })
+            setIdMovie("0")
+            setIdTheater("0")
         }
-        setIdMovie("0")
-        setIdTheater("0")
     },[dataItem])
 
     useEffect(()=>{
@@ -148,11 +187,10 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
             if (movieDuration) {
                 let endOfShowtime = null
     
-                if (id === 'startTime') {
+                if (id == 'startTime') {
                     endOfShowtime = addMinutes(new Date(`${onDateSelect} ${value}`), movieDuration)
                     nextState.endTime = formatHourAndMinute(endOfShowtime)
                 } 
-               
             }
             return nextState
         })
@@ -170,6 +208,16 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
             let dataForApi = {}
             if(dataItem.id){
                 method = 'PUT'
+                dataForApi = {
+                    showtime_id: dataItem?.id,
+                    movie_id: Number(idMovie),
+                    room_id: Number(idTheater),
+                    start_time: `${onDateSelect} ${showtime.startTime}`,
+                    end_time: `${onDateSelect} ${showtime.endTime}`,
+                    price: Number(showtime.price),
+                    max_tickets: showtime.max_tickets,
+                    point: showtime.point,
+                }
             }
             else{
                 dataForApi = {
@@ -182,18 +230,22 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                     point: showtime.point,
                 }
             }
-            console.log(dataForApi)
             const res = await customeFetch(apiUserService.baseURL+'/showtimes','authen',method,JSON.stringify(dataForApi))
             if(res.ok){
                 const data = await res.json()
-                if(data.id){
+                
+                if(dataForApi.showtime_id){
                     setDatas( pre => {
-                        return handleAddShowtimeAfterBE(pre, idTheater, onDateSelect ,showtime, data.id, getTitle(dataForm.movies, idMovie))
+                        return handleUpdateShowtimeAfterBE(pre, idTheater, onDateSelect ,showtime, data.id, getTitle(dataForm.movies, idMovie))
+                    })
+                    toast.success("Cập nhật suất chiếu thành công !")
+                }
+                else{
+                    setDatas( pre => {
+                        return handleAddShowtimeAfterBE(pre, data, getTitle(dataForm.movies, idMovie))
                     })
                     toast.success("Thêm suất chiếu thành công !")
                 }
-                else
-                    toast.error(data.message)
             }
             else{
                 const data = await res.json()
@@ -206,7 +258,7 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
         }
         hideLoading()
     }
-    console.log(idMovie, idTheater)
+
     return <>
         <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-y-auto modal-content">
             <span className="close" onClick={closeModal}>&times;</span>

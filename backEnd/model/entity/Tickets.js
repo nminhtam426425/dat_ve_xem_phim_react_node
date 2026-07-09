@@ -3,18 +3,20 @@ import { sequelize,DataTypes } from "../index.js";
 const Tickets = sequelize.define(
     'Tickets',
     {
-        ticket_id:{
+        showtime_id:{
             type: DataTypes.STRING(36),
             primaryKey: true
         },
-        seat_id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true
+        seat_number: {
+            type: DataTypes.STRING(10),
+            primaryKey: true,
         },
+        ticket_id: DataTypes.STRING(36),
         booking_id: DataTypes.STRING(36),
-        showtime_id: DataTypes.STRING(36),
         is_scanned: DataTypes.BOOLEAN,
-        scanned_at: DataTypes.DATE
+        scanned_at: DataTypes.DATE,
+        expired_at: DataTypes.DATE,
+        status: DataTypes.STRING(10)
     }, 
     {
         tableName: "tickets",

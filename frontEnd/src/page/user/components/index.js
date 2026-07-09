@@ -6,6 +6,10 @@ import ContentDetail from "./ContentDetail"
 import ContentProfileUser from "./ContentProfileUser"
 import ContentTicket from "./ContentTicket"
 import ContentPayment from "./ContentPayment"
+import ContentHistory from "./ContentHistory"
+import ContentMyVoucher from "./ContentMyVoucher"
+import ContentListVoucher from "./ContentListVoucher"
+import ContetnAboutUs from "./ContentAboutUs"
 
 export {
     Footer,
@@ -15,5 +19,9 @@ export {
     ContentDetail,
     ContentProfileUser,
     ContentTicket,
-    ContentPayment
+    ContentPayment,
+    ContentHistory,
+    ContentMyVoucher,
+    ContentListVoucher,
+    ContetnAboutUs
 }

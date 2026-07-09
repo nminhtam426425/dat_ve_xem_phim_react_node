@@ -1,4 +1,4 @@
-import { sequelize,DataTypes,Transaction } from "./connect.js"
+import { sequelize,DataTypes,Transaction,QueryTypes } from "./connect.js"
 import User from './entity/User.js'
 import Branches from "./entity/Branches.js"
 import BranchStaff from "./entity/BranchStaff.js"
@@ -14,6 +14,8 @@ import MovieCategory from "./entity/MovieCategory.js"
 import MovieTheater from "./entity/MovieTheater.js"
 import Seats from "./entity/Seats.js"
 import TypeTheater from "./entity/TypeTheater.js"
+import BookingVoucher from './entity/BookingVoucher.js'
+import MovieTrending from "./entity/MovieTrending.js"
 
 // bracnhes N-N users
 Branches.belongsToMany(User,{through: BranchStaff, foreignKey: 'branch_id',otherKey: 'user_id'})
@@ -43,6 +45,10 @@ Feedbacks.belongsTo(User,{foreignKey: 'user_id'})
 Showtimes.hasMany(Feedbacks,{foreignKey: 'showtime_id'})
 Feedbacks.belongsTo(Showtimes,{foreignKey: 'showtime_id'})
 
+// showtimes 1-N bookings
+Showtimes.hasMany(Bookings,{foreignKey: 'showtime_id'})
+Bookings.belongsTo(Showtimes,{foreignKey: 'showtime_id'})
+
 // movies N-N categories
 Movies.belongsToMany(Categories,{through: MovieCategory, foreignKey: 'movie_id',otherKey: 'category_id'})
 Categories.belongsToMany(Movies,{through: MovieCategory, foreignKey: 'category_id',otherKey: 'movie_id'})
@@ -61,22 +67,26 @@ Bookings.belongsTo(User,{foreignKey: 'user_id'})
 User.hasMany(Bookings,{foreignKey: 'staff_id'})
 Bookings.belongsTo(User,{foreignKey: 'staff_id'})
 
-// bookings 1-N tickets
-Bookings.hasMany(Tickets,{foreignKey: 'booking_id'})
-Tickets.belongsTo(Bookings,{foreignKey: 'booking_id'})
-
-// ticket 1 - 1 seat
-Seats.hasOne(Tickets,{foreignKey: 'seat_id'})
-Tickets.belongsTo(Seats,{foreignKey: 'seat_id'})
-
-
 // showtimes 1-N tickets
 Showtimes.hasMany(Tickets,{foreignKey: 'showtime_id'})
 Tickets.belongsTo(Showtimes,{foreignKey: 'showtime_id'})
 
+// bookings N-N vouchers
+Bookings.belongsToMany(Vouchers,{through: BookingVoucher, foreignKey: 'booking_id',otherKey: 'voucher_id'})
+Vouchers.belongsToMany(Bookings,{through: BookingVoucher, foreignKey: 'voucher_id',otherKey: 'booking_id'})
+
+// bookings 1-N tickets
+Bookings.hasMany(Tickets,{foreignKey: 'booking_id'})
+Tickets.belongsTo(Bookings,{foreignKey: 'booking_id'})
+
+// movie 1 - 1 movie_trending
+Movies.hasMany(MovieTrending,{foreignKey: 'movie_id'})
+MovieTrending.belongsTo(Movies,{foreignKey: 'movie_id'})
+
 export {
     sequelize,
     DataTypes,
+    QueryTypes,
     Transaction,
     User,
     Branches,
@@ -92,5 +102,6 @@ export {
     Categories,
     MovieTheater,
     Seats,
-    TypeTheater
+    TypeTheater,
+    MovieTrending
 }

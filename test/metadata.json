@@ -1,6 +1,0 @@
-{
-  "name": "CineReserve",
-  "description": "Premium movie booking experience for the true cinephile.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

@@ -1,4 +1,7 @@
-import { MovieTheater,Seats, BranchStaff, TypeTheater } from "../model/index.js";
+import { Op } from "sequelize"
+import { MovieTheater,Seats, BranchStaff, TypeTheater, Showtimes } from "../model/index.js"
+import { findObject, convertObjectForUpdate } from "./validate.js";
+
 class MovieTheaterService {
     constructor(room) {
         this.room = room;
@@ -16,7 +19,7 @@ class MovieTheaterService {
         })
         
         let dataSource =  this.room.findAll({
-            attributes: ['id','name','count_per_row','countStandard','countVIP','countSweetbox'],
+            attributes: ['id','name','type_id','count_per_row','countStandard','countVIP','countSweetbox'],
             where:{
                 branch_id: id_branch.branch_id
             },
@@ -125,7 +128,8 @@ class MovieTheaterService {
                 name: roomIsCreated.name,
                 branch_id: roomIsCreated.branch_id,
                 type:roomIsCreated.type_id,
-                type_name: typeBranch.type_name
+                type_name: typeBranch.type_name,
+                description: typeBranch.description
             }
         }
         catch(err){
@@ -133,19 +137,59 @@ class MovieTheaterService {
         }
     }
 
-    // update = async ({ id,name,branchId,type,arrName,arrType,chairPerLine }) => {
-    //     try{
-    //        let seats = await Seats.findAll({
-    //             where: {room_id: id}
-    //        })
-    //        if(!seats)
-    //             throw new Error("Không tìm thấy phòng !")
+    update = async ({ room_id,name,type,countStandard,countVIP,countSweetbox,arrName,arrType,chairPerLine }) => {
+        try{
+            let showtime = await Showtimes.findOne({
+                    attributes: ['id'],
+                    where: {
+                        start_time: {
+                            [Op.gte]: new Date()
+                        },
+                        room_id: room_id
+                    }
+            })
+            // có suất chiếu - không cho sửa
+            if(showtime)
+                 throw new Error("Hiện đang có suất chiếu, không thể cập nhật !")
+            
+            
+            // xóa các ghế 
+            await Seats.destroy({
+                    where: {
+                        room_id: room_id
+                    }
+            })
 
-    //     }
-    //     catch(err){
-    //         throw new Error(err.message)
-    //     }
-    // }
+            // tiến hành sửa
+            let roomUpdate = await findObject(this.room, 'id', room_id)
+
+            let sourceObj = {name,type_id: type, count_per_row: chairPerLine, countStandard,countVIP,countSweetbox}
+            roomUpdate = convertObjectForUpdate(roomUpdate, sourceObj)
+            await roomUpdate.save()
+
+            // tiến hành tạo danh sách ghế mới
+            let listChairOfRoom = this.createRoom(arrName,chairPerLine,arrType,room_id)
+
+            listChairOfRoom =  await Seats.bulkCreate(listChairOfRoom)
+
+            const typeBranch = await TypeTheater.findOne({
+                where:{id: type}
+            })
+
+            return {
+                id: roomUpdate.id,
+                name: roomUpdate.name,
+                branch_id: roomUpdate.branch_id,
+                type: roomUpdate.type_id,
+                type_name: typeBranch.type_name,
+                description: typeBranch.description
+            }
+
+        }
+        catch(err){
+            throw new Error(err.message)
+        }
+    }
 
     // trả về một mảng các ghế với loại tương ứng
     // arr là tên của ghế [A, B, C, ...]

@@ -7,6 +7,8 @@ import VoucherService from "./VoucherService.js"
 import TicketService from "./TicketService.js"
 import AuthenService from "./AuthenService2.js"
 import CategoryService from "./CategoryService.js"
+import RevenueService from "./RevenueService.js"
+import TypeTheaterService from "./TypeTheaterService.js"
 
 export {
     UserService,
@@ -17,5 +19,7 @@ export {
     VoucherService,
     TicketService,
     AuthenService,
-    CategoryService
+    CategoryService,
+    RevenueService,
+    TypeTheaterService
 }

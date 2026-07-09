@@ -1,4 +1,4 @@
-import { Sequelize,DataTypes, Transaction } from 'sequelize';
+import { Sequelize,DataTypes, Transaction, QueryTypes } from 'sequelize';
 import 'dotenv/config';
 
 const sequelize = new Sequelize(
@@ -19,4 +19,4 @@ const sequelize = new Sequelize(
     }
 );
 
-export {sequelize,DataTypes,Transaction}
+export {sequelize,DataTypes,Transaction, QueryTypes}

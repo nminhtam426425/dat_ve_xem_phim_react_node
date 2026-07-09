@@ -12,7 +12,6 @@ const Bookings = sequelize.define(
         showtime_id: DataTypes.STRING(36),
         booking_date: DataTypes.DATE,
         payment_status: DataTypes.ENUM('pending', 'paid', 'cancelled'),
-        voucher_id: DataTypes.INTEGER,
         price_at_booking: DataTypes.DOUBLE
     }, 
     {

@@ -4,11 +4,15 @@ import express from 'express'
 
 const routerUser = express.Router()
 
-routerUser.get('/all',authenticate,authorize(['admin', 'superadmin']),UserController.getAll)
-routerUser.get('/',authenticate,authorize(['admin', 'superadmin','staff','user']),UserController.info)
+routerUser.get('/all',authenticate,authorize(['admin','staff']),UserController.getAll)
+routerUser.get('/',authenticate,authorize(['admin','staff','user']),UserController.info)
+routerUser.put('/activate',authenticate,authorize(['admin']),UserController.activateAccount)
 routerUser.post('/',UserController.create)
-routerUser.put('/',UserController.update)
-routerUser.delete('/',UserController.delete)
-routerUser.post('/staff',UserController.createStaff)
+routerUser.put('/',authenticate,authorize(['admin','staff','user']),UserController.update)
+routerUser.put('/avatar',authenticate,authorize(['admin','staff','user']),UserController.updateAvatar)
+routerUser.delete('/',authenticate,authorize(['admin']),UserController.delete)
+routerUser.post('/staff',authenticate,authorize(['admin']),UserController.createStaff)
+routerUser.get('/spending',authenticate,authorize(['user']),UserController.getSpendingPrivate)
+routerUser.post('/change-password',authenticate,authorize(['user','staff','admin']),UserController.changePassword)
 
 export default routerUser

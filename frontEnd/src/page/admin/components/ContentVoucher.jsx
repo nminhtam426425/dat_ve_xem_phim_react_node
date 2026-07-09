@@ -1,12 +1,54 @@
-import {CircleCheck, Ticket, Plus, History, ListFilterPlus, Percent, Pencil, Trash2, CreditCard} from "lucide-react"
+import { useState, useMemo } from "react"
+import {CircleCheck, Ticket, Plus, History, Percent, Pencil, Trash2, CreditCard, ChevronDown} from "lucide-react"
 import { formatVND2, formatDate } from "../../validate"
 import Paging from "./Paging"
 
 const ContentVoucher = ({setDataItem, datas, setConfirm, setDataItemBeforeConfirm}) => {  
+    const itemsPerPage = 5
+    
+    const [currentPage, setCurrentPage] = useState(1)
+    const [typeVoucher, setTypeVoucher] = useState('all')
+    const [freeVoucher, setFreeVoucher] = useState(-1)
+    const filteredData  = useMemo(()=>{
+        return datas.filter((voucher) => {
+            let isMatchType = voucher.discount_type == typeVoucher || typeVoucher == 'all'
+            // vì dựa vào point_cost chưa đủ để render nên mới cần 3 điều kiện nếu muốn render đúng render dổi thưởng hoặc miễn phí
+            let isRewardPoints = (voucher.point_cost == 0 && freeVoucher == 0) || (voucher.point_cost != 0  && freeVoucher == 1) || freeVoucher == -1
+            return isMatchType && isRewardPoints
+        })
+       
+    },[datas, typeVoucher, freeVoucher])
+
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+
+    const dataOfPage = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage
+        const endIndex = startIndex + itemsPerPage
+    
+        return filteredData.slice(startIndex,endIndex)
+
+    }, [filteredData,currentPage,itemsPerPage])
+
+    const changeTypeVoucher = (type) => {
+        setTypeVoucher(type)
+        setCurrentPage(1)
+    }
+
     const handDelete = (item) => {
         setDataItemBeforeConfirm(item)
         setConfirm(true)
     }
+
+    const changeSelect = (e) => {
+        const value = e.target.value
+        setFreeVoucher(value)
+    }
+
+    const resetFilter = () => {
+        setTypeVoucher('all')
+        setFreeVoucher(-1)
+    }
+
     return <>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -66,11 +108,40 @@ const ContentVoucher = ({setDataItem, datas, setConfirm, setDataItemBeforeConfir
             </div>
 
             <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-outline-variant flex items-center justify-between">
+                <div className="p-6 border-b border-outline-variant flex items-center gap-2">
                     <div className="flex gap-2">
-                        <button className="px-4 py-2 rounded-full bg-primary text-on-primary text-sm font-bold">Tất cả</button>
-                        <button className="px-4 py-2 rounded-full hover:bg-surface-container text-secondary text-sm font-medium">Cố định (đ)</button>
-                        <button className="px-4 py-2 rounded-full hover:bg-surface-container text-secondary text-sm font-medium">Phần trăm (%)</button>
+                        <button 
+                            onClick={()=>changeTypeVoucher('all')}
+                            className={`px-4 py-2 rounded-full text-sm ${typeVoucher == 'all' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-secondary font-medium'}`}>
+                                Tất cả
+                        </button>
+
+                        <button 
+                            onClick={()=>changeTypeVoucher('fixed_amount')}
+                            className={`px-4 py-2 rounded-full text-sm ${typeVoucher == 'fixed_amount' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-secondary font-medium'}`}>
+                                Cố định (đ)
+                        </button>
+
+                        <button 
+                            onClick={()=>changeTypeVoucher('percentage')}
+                            className={`px-4 py-2 rounded-full text-sm ${typeVoucher == 'percentage' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-secondary font-medium'}`}>
+                                Phần trăm (%)
+                        </button>
+                    </div>
+
+                    <div className="relative min-w-[180px]">
+                        <select 
+                            value={freeVoucher}
+                            onChange={changeSelect}
+                            className="w-full appearance-none px-4 py-2.5 bg-surface-container-low border border-outline-variant/50 rounded-lg focus:ring-2 focus:ring-primary outline-none text-label-bold cursor-pointer pr-10"
+                            >
+                            <option value={-1}>Tất cả thể loại</option>
+                            <option value={1}>Đổi thưởng</option>
+                            <option value={0}>Dùng chung</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary" data-icon="expand_more">
+                            <ChevronDown size={20} />
+                        </span>
                     </div>
 
                     {/* <button className="text-secondary flex items-center gap-2 hover:text-on-surface transition-colors">
@@ -97,7 +168,9 @@ const ContentVoucher = ({setDataItem, datas, setConfirm, setDataItemBeforeConfir
 
                         <tbody className="divide-y divide-outline-variant">
                             {
-                                datas?.map( item => 
+                                dataOfPage.length > 0 
+                                ?
+                                dataOfPage?.map( item => 
                                     <tr key={item.id} className="hover:bg-surface-container-low/50 transition-colors group">
                                         <td className="px-6 py-5 font-bold text-on-surface">{item?.code}</td>
                                         <td className="px-6 py-5">
@@ -118,7 +191,7 @@ const ContentVoucher = ({setDataItem, datas, setConfirm, setDataItemBeforeConfir
                                         <td className="px-6 py-5">
                                             <span 
                                             className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-tight ${item?.usage === 100 ? 'bg-surface-container-highest text-secondary' : 'bg-green-100 text-green-700'}`}>
-                                                {Math.ceil(item?.remain_usage/item?.usage_limit)}%
+                                                {item?.usage_limit == 0 ? 0 : Math.ceil(item?.remain_usage/item?.usage_limit)}%
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-right">
@@ -141,12 +214,19 @@ const ContentVoucher = ({setDataItem, datas, setConfirm, setDataItemBeforeConfir
                                         </td>
                                     </tr>
                                 )
+                                : 
+                                <tr>
+                                    <td className="px-6 py-4" colSpan={7}>
+                                        Không có dữ liệu
+                                    </td>
+                                </tr>
                             }
                         </tbody>
                     </table>
                 </div>
                
-                {datas.length > 0 && <Paging currentPage={1} setCurrentPage={1} totalPage={1} />}
+                {dataOfPage.length > 0 
+                && <Paging currentPage={currentPage} setCurrentPage={setCurrentPage} totalPage={totalPages} resetFilter={resetFilter} itemsPerPage={itemsPerPage}/>}
             </div>
         </div>
     </>

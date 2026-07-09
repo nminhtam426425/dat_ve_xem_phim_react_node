@@ -16,7 +16,7 @@ const ContentTheater = ({setDataItem,theaterOnBranch, setDataItemBeforeConfirm, 
         setTheater,
         setConfirm,
         setDataItemBeforeConfirm
-       }
+    }
     return <>
         <div className="p-6">
             <div>
@@ -65,16 +65,16 @@ const ContentTheater = ({setDataItem,theaterOnBranch, setDataItemBeforeConfirm, 
                                     <span className="material-symbols-outlined text-body-md" data-icon="aspect_ratio">
                                         <ScreenShare size={20}/>
                                     </span>
-                                    <span className="text-body-md">Loại màn hình: <strong>{theaterOnBranch[theater]?.type_name || '2D'}</strong></span>
+                                    <span className="text-body-md">Loại phòng chiếu: <strong>{theaterOnBranch[theater]?.TypeTheater?.type_name || ''}</strong></span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center">
+                        {/* <div className="flex items-center">
                             <button 
                                 className="px-6 py-3 border border-outline rounded-xl font-bold text-primary bg-surface hover:bg-surface-container-high transition-all"
                                 >Sửa cấu hình
                             </button>
-                        </div>
+                        </div> */}
                     </div>
                     :
                     <div className="flex justify-between items-center mt-6 mb-8">

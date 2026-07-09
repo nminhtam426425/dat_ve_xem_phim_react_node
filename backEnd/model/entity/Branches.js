@@ -10,7 +10,8 @@ const Branches = sequelize.define(
         },
         name: DataTypes.STRING(255),
         address: DataTypes.STRING(255),
-        phone: DataTypes.STRING(10)
+        is_activating: DataTypes.INTEGER,
+        map_url: DataTypes.TEXT
     }, 
     {
         tableName: "branches",

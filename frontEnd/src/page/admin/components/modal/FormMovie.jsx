@@ -10,15 +10,17 @@ import {customeFetch,
 import {formatDate2} from '../../../validate.js'
 import { toast } from "sonner"
 import { useLoading } from "../../../../LoadingContext.jsx"
+import { Link } from "react-router-dom"
 
 const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
     const {showLoading, hideLoading} = useLoading()
     const [notPassValid, setNotPassValid] = useState(true)
     const [movie, setMovie] = useState({
         title: "",
-        release_date: null,
+        release_date: formatDate2(new Date()),
         duration: 90,
         director: "",
+        trailer_url: "",
         actor: "",
         synopsis: ""
     })
@@ -27,7 +29,8 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
         title_0: "",
         director_0: "",
         actor_0: "",
-        synopsis_0: ""
+        synopsis_0: "",
+        release_date_0: ""
     })
     
     const [moviePoster, setMoviePoster] = useState({
@@ -40,13 +43,14 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
 
     // xử lý khi có dateItem của modal để pop-up
     useEffect(()=>{
-        if(dataItem){
+        if(dataItem?.id){
             setMovie(
                 {
                     title: dataItem.title || "",
-                    release_date: dataItem.release_date || "",
+                    release_date: dataItem.release_date.substring(0,10) || "",
                     duration: dataItem.duration || 90,
                     director: dataItem.director || "",
+                    trailer_url: dataItem.trailer_url || "",
                     actor: dataItem.actor || "",
                     synopsis:dataItem.description || ""
                 }
@@ -56,15 +60,18 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
                 file: null,
                 url: dataItem.poster_url || ""
             })
+            setNotPassValid(false)
         }
         // sau khi sửa hoặc thêm thì reset lại để tắt modal
         else{
+            setNotPassValid(true)
             setMovie(
                 {
                     title:  "",
                     release_date: "",
                     duration:  90,
                     director:  "",
+                    trailer_url:  "",
                     actor:  "",
                     synopsis: ""
                 }
@@ -75,11 +82,17 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
                 url: null
             })
         }
+        setMovieError({
+            title_0: "",
+            director_0: "",
+            actor_0: "",
+            synopsis_0: ""
+        })
     },[dataItem]) 
 
     // xử lý cho các input, dùng chung cho các input có cùng state là movie
     const handleInputChange = (e) => {
-        handleInputOnChange(e, setMovie, setMovieError, setNotPassValid)
+        handleInputOnChange(e, setMovie, setMovieError, setNotPassValid, "formMovie")
     }
 
     const choseImgFormClient = () => {
@@ -144,7 +157,7 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
                             pub_id_poster: img.publicId || "",
                             director: movie.director,
                             actor: movie.actor,
-                            trailer_url:null,
+                            trailer_url:movie.trailer_url || "",
                             categories: categorieForCreate
                         } 
                         
@@ -155,7 +168,6 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
                 }
             }
             else{
-                console.log(movie)
                 dataForApi = {
                     title: movie.title,
                     description: movie.synopsis,
@@ -165,7 +177,7 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
                     pub_id_poster: dataItem.pub_id_poster || "",
                     director: movie.director,
                     actor: movie.actor,
-                    trailer_url:null,
+                    trailer_url:movie.trailer_url,
                     categories: categorieForCreate
                 } 
             }
@@ -237,7 +249,7 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
     }
       
     return <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 modal-content modal-content-h-90 overflow-y-scroll">
-         <span className="close" onClick={closeModal}>&times;</span>
+        <span className="close" onClick={closeModal}>&times;</span>
         <form method="POST" className="p-8 space-y-4" onSubmit={handleAddMovie}>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                 <div className="md:col-span-4 space-y-4">
@@ -299,13 +311,16 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-1">
-                            <label className="block text-sm font-label-bold text-on-surface" htmlFor="release_date">Ngày phát hành</label>
+                            <label className="block text-sm font-label-bold text-on-surface" htmlFor="release_date">
+                                Ngày phát hành
+                                <span id="release_date_0" className="text-primary">{movieError.release_date_0}</span>
+                            </label>
                             <div className="relative">
                                 <input 
                                     className="w-full px-4 py-3 bg-surface-container-lowest border border-outline rounded-lg focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container outline-none transition-all" 
                                     id="release_date"
                                     type="date"
-                                    value={formatDate2(movie.release_date)}
+                                    value={movie.release_date}
                                     onChange={handleInputChange}
                                     required/>
                             </div>
@@ -358,6 +373,32 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
                                 type="text"
                                 value={movie.actor}
                                 onChange={handleInputChange}/>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-1 gap-6">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-label-bold text-on-surface" htmlFor="trailer_url">
+                                Trailer URL
+                                <span  className="text-primary text-[12px]">
+                                    {(movie.trailer_url == "" || movie.trailer_url == null) ? ' (Mở youtube và sao chép URL của phim - cẩn thận bản quyền)' : ' Vui lòng không chỉnh sửa URL của phim'}
+                                </span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    className="flex-1 px-4 py-3 bg-surface-container-lowest border border-outline rounded-lg focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container outline-none transition-all placeholder:text-outline-variant" 
+                                    id="trailer_url" 
+                                    placeholder="Lấy url từ youtube, vui lòng không chỉnh sửa khi sao chép" 
+                                    type="text"
+                                    value={movie.trailer_url}
+                                    onChange={handleInputChange}/>
+
+                                <div className="">
+                                    <Link to="https://youtube.com" target="_blank" className="px-4 py-3 rounded-lg bg-primary-container text-white">
+                                        Mở Youtube
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

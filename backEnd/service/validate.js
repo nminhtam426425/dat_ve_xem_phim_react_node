@@ -9,7 +9,9 @@ const validateUsername = (username) => {
 }
 
 const validatePassword = (password) => {
-    const regex = /^[a-zA-Z0-9]{8,}$/
+    if(password.includes(" ")) return false
+    
+    const regex = /^[\w\W]{8,}$/
     return regex.test(password)
 }
 

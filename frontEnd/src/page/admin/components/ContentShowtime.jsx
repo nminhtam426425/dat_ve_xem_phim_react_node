@@ -1,28 +1,30 @@
-import {ChevronDown, Plus, Trash2, Pencil} from 'lucide-react'
+import {Plus, Trash2, Pencil} from 'lucide-react'
 import DateSelector from './DateSelector'
+import { toast } from 'sonner'
 
 const times = [
+    {time: '00:00'},{time: '01:00'}, {time: '02:00'},{time: '03:00'},
+    {time: '04:00'},{time: '05:00'}, {time: '06:00'},{time: '07:00'},
     {time: '08:00'},{time: '09:00'},{time: '10:00'},{time: '11:00'},
     {time: '12:00'},{time: '13:00'},{time: '14:00'},{time: '15:00'},
     {time: '16:00'},{time: '17:00'},{time: '18:00'},{time: '19:00'},
     {time: '20:00'},{time: '21:00'}, {time: '22:00'},{time: '23:00'},
-    // {time: '00:00'},{time: '01:00'}, {time: '02:00'},{time: '03:00'},
-    // {time: '04:00'},{time: '05:00'}, {time: '06:00'},{time: '07:00'}
+  
 ]
 
 const calcultorWidthOrLeft = (start, end) => {
-    let temp = ((start - end)/(1000*60*60)/16)*100
+    let temp = ((start - end)/(1000*60*60)/24)*100
     return temp.toFixed(2)
 }
 
 const RenderBorderRight = () => {
     let temp = []
-    for(let i = 0; i < 16; i++)
+    for(let i = 0; i < 24; i++)
         temp.push({id: i})
 
-    return <div className="absolute inset-0 grid grid-cols-16 pointer-events-none opacity-20">
+    return <div className="absolute inset-0 grid pointer-events-none opacity-20 grid-cols-24">
         {
-            temp.map( (item) => <div key={item.id} className="border-r border-b border-outline "></div>)
+            temp.map( (item) => <div key={item.id} className="border-r border-b border-outline"></div>)
         }
     </div>
 }
@@ -45,12 +47,24 @@ const formatHourMinute = (time) => {
 const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, setConfirm, setDataItemBeforeConfirm}) => {
     const gridStyle = { gridTemplateColumns: `180px repeat(${times.length}, minmax(0, 90px))`}
 
-    const handleDelete = (item, index) => {
+    const handleDelete = (showtime, item, index) => {
+        if(showtime.sold > 0){
+            toast.error('Không thể xóa suất chiếu đã có vé được bán ra!')
+            return 
+        }
         setDataItemBeforeConfirm({
             id: item.showtimes[index].id,
             room_id: item.room_id
         })
         setConfirm(true)
+    }
+
+    const handleUpdate = (showtime) => {
+        if(showtime.sold > 0 ){
+            toast.error('Không thể cập nhật suất chiếu đã có vé được bán ra!')
+            return 
+        }
+        setDataItem(showtime)
     }
 
     return <div className="max-w-container-max mx-auto w-full p-6">
@@ -115,14 +129,14 @@ const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, set
                                 <span className="font-bold text-on-surface">{item.name}</span>
                                 <span className={`text-[10px] ${typeTheater(item.type_id)} px-2 py-0.5 rounded-full w-fit mt-1 font-bold`}>{item.type}</span>
                             </div>
-                            <div className="relative col-span-16 grid-cols-16 group-hover:bg-surface-container-low/30 transition-colors">
+                            <div className="relative col-span-24 group-hover:bg-surface-container-low/30 transition-colors">
                             <RenderBorderRight />
-                        {
+                            {
                                 item?.showtimes?.map( (showtime, index) => {
                                     let start = new Date(showtime.startTime)
                                     let end = new Date(showtime.endTime)
                                     let temp = new Date(onDateSelect)
-                                    let mark = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate(), 8, 0 ,0)
+                                    let mark = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate(), 0, 0 ,0)
                                     let leftShow = calcultorWidthOrLeft(start, mark)
                                     let widthShow = calcultorWidthOrLeft(end, start)
                                     let tempStyle = {
@@ -153,12 +167,12 @@ const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, set
                                                     <div className="flex justify-end">
                                                         <button
                                                             className="p-1 rounded-lg hover:bg-surface-container transition-all text-tertiary"
-                                                            onClick={()=>console.log("sua")}>
+                                                            onClick={()=>handleUpdate(showtime, item)}>
                                                             <span className="text-yellow-700"><Pencil size={12}/></span>
                                                         </button>
                                                         <button
                                                             className="p-1 rounded-lg hover:bg-error-container hover:text-error transition-all text-tertiary"
-                                                            onClick={()=>handleDelete(item, index)}>
+                                                            onClick={()=>handleDelete(showtime, item, index)}>
                                                             <span className="text-primary"><Trash2 size={12}/></span>
                                                         </button>
                                                     </div>

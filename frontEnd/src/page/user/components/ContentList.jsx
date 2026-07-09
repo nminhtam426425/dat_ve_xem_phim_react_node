@@ -1,112 +1,61 @@
 import { useLocation } from "react-router-dom"
+import { useMemo, useState } from "react"
 import Category from "./Category"
 import Paging from "./Paging"
 import MovieCard from "./MovieCard"
+import { removeVietnameseTones } from "../../config"
 
-const datas = [
-    {
-        id:'6',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781577345/jhym7b2qzhy12lrvzuhb.png',
-        name: 'Nobita và Lâu đài dưới đáy biển',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'7',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781577381/sq1tnltqbc8ovgmkpks0.png',
-        name: 'Train To Busan',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'8',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781577412/oq8e5b5pa8kcgx665csh.jpg',
-        name: 'Vô hạn thành',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'9',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781671502/i4pwk3ddvfnyhfoztxa7.jpg',
-        name: 'Dòng thời gian đen tối',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'61',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781577345/jhym7b2qzhy12lrvzuhb.png',
-        name: 'Nobita và Lâu đài dưới đáy biển',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'72',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781577381/sq1tnltqbc8ovgmkpks0.png',
-        name: 'Train To Busan',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'83',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781577412/oq8e5b5pa8kcgx665csh.jpg',
-        name: 'Vô hạn thành',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'94',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781671502/i4pwk3ddvfnyhfoztxa7.jpg',
-        name: 'Dòng thời gian đen tối',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'831',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781577412/oq8e5b5pa8kcgx665csh.jpg',
-        name: 'Vô hạn thành',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-    {
-        id:'941',
-        poster_url: 'https://res.cloudinary.com/dq8bb1xdl/image/upload/v1781671502/i4pwk3ddvfnyhfoztxa7.jpg',
-        name: 'Dòng thời gian đen tối',
-        release_date: '2026-10-10',
-        score: 8.0,
-        duration: 135
-    },
-]
-
-const ContentList = () => {
+const ContentList = ({setTrailer,searchQuery, setSearchKeyword, dataRender}) => {
     const location = useLocation()
+    const itemsPerPage = 10
+    const [currentPage, setCurrentPage] = useState(1)
+    const [selectedCategory, setSelectedCategory] = useState(location?.state?.idCategory || "0")
+
+    const resetFilter = () => {
+        setSearchKeyword("")
+        setSelectedCategory(0)
+    }
+
+    const filteredData  = useMemo(()=>{
+        return dataRender.filter((movie) => {
+            const matchCategory = Number(selectedCategory) === 0 || movie.Categories.some((c) => c.id === Number(selectedCategory))
+    
+            const keyword = removeVietnameseTones(searchQuery?.trim());
+            const matchSearch = keyword === "" || removeVietnameseTones(movie.title).includes(keyword) || removeVietnameseTones(movie.director).includes(keyword)
+    
+            return matchSearch && matchCategory
+        })
+       
+    },[dataRender, searchQuery, selectedCategory])
+
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+
+    const dataOfPage = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage
+        const endIndex = startIndex + itemsPerPage
+        return filteredData.slice(startIndex,endIndex)
+
+    }, [filteredData,currentPage,itemsPerPage])
+
     return<main className="bg-background2">
         <div className="flex-grow max-w-[1280px] mx-auto w-full px-6 py-8">
+                <div className="pb-8">
+                    <Category type="local" idChosen={selectedCategory} setSelectedCategory={setSelectedCategory}/>
+                </div>
             {
-                datas.length > 0 
+                dataOfPage.length > 0 
                 ?
                 <>
-                  <div className="pb-8">
-                    <Category type="local" idChosen={location?.state?.idCategory}/>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-12">
-                    {
-                        datas.map( item => <MovieCard key={item.id} data={item}/>)
-                    }
-                </div>
-                <Paging currentPage={1} setCurrentPage={null}  totalPage={9} resetFilter/>
+                   
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-12">
+                        {
+                            dataOfPage.map( item => <MovieCard key={item.id} data={item} setTrailer={setTrailer}/>)
+                        }
+                    </div>
+                    <Paging currentPage={currentPage} setCurrentPage={setCurrentPage}  totalPage={totalPages} resetFilter={resetFilter}/>
                 </>
                 :
-                <div className="h-full">
-                </div>
+                <div className="h-[370px] text-white">Không có dữ liệu</div>
             }
         </div>
     </main> 

@@ -10,5 +10,8 @@ routerMovie.post('/',authenticate,authorize(['admin']),MovieController.create)
 routerMovie.put('/',authenticate,authorize(['admin']),MovieController.update)
 routerMovie.delete('/:id',authenticate,authorize(['admin']),MovieController.delete)
 routerMovie.post('/delete/poster',authenticate,authorize(['admin']),MovieController.deletePoster)
+routerMovie.post('/trending',authenticate,authorize(['admin']),MovieController.updateMovieTrending)
+routerMovie.get('/detail/:id_movie',MovieController.getMovieById)
+routerMovie.get('/trending',MovieController.getMovieTrending)
 
 export default routerMovie

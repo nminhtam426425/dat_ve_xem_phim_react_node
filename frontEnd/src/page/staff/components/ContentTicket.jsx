@@ -1,20 +1,15 @@
-import {Printer}from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { customeFetch, apiUserService,pusher } from '../../config'
-import { formatVND2, getHourString } from '../../validate' 
+import { formatVND2, getHourString, calculatorPrice } from '../../validate' 
+import TicketDownloader from './TicketDownloader'
 
-const calculatorPrice = (count, price) => {
-    if(!count || !price) return ""
-    return formatVND2(price*count)
-}
-
-const ContentTicket = ({datas, categories}) => {
+const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoint, setUserEarnPoint}) => {
     const [showtimeChose, setShowtimeChose] = useState(null)
     const [cateChose, setCateChose] = useState('all')
     const [listChair, setListChair] = useState([])
     const [chairChosen, setChairChosen] = useState([])
-    const [points, setPoints] = useState(false)
-    
+    const [socketId, setSocketId] = useState(null)
+
     useEffect( ()=>{
         if(showtimeChose!=null){
             const getSeats = async () => {
@@ -36,29 +31,54 @@ const ContentTicket = ({datas, categories}) => {
     useEffect( ()=>{
         if(!showtimeChose?.showtime?.id) return 
 
-        const channel = pusher.subscribe(`showtimes-${showtimeChose?.showtime?.id}`)
-        console.log(channel)
-        channel.bind('booking_seat',(data)=>{
-            const {seatId} = data
-            setListChair( pre => {
-                if (!pre) return pre
-
-                return {
-                    ...pre,
-                    list: pre.list.map(item => {
-                        if (item.id == seatId) 
-                            return { ...item, status: 'booked' }
-                        
-                        return item
-                    })
-                }
+        if (pusher.connection.state === 'connected') {
+            setSocketId(pusher.connection.socket_id)
+        } else {
+            pusher.connection.bind('connected', () => {
+                setSocketId(pusher.connection.socket_id)
             })
+        }
+
+        const channelName = `showtimes-${showtimeChose?.showtime?.id}`
+        const channel = pusher.subscribe(channelName)
+
+        channel.bind('booking_seat',(data)=>{
+            const {seatId,type} = data
+            if(type == 'book'){
+                setListChair( pre => {
+                    if (!pre) return pre
+    
+                    return {
+                        ...pre,
+                        list: pre.list.map(item => {
+                            if (seatId.includes(item.seat_number)) 
+                                return { ...item, status: 'booked' }
+                            
+                            return item
+                        })
+                    }
+                })
+            }
+            else{
+                setListChair( pre => {
+                    if (!pre) return pre
+    
+                    return {
+                        ...pre,
+                        list: pre.list.map(item => {
+                            if (seatId.includes(item.seat_number)) 
+                                return { ...item, status: 'empty' }
+                            
+                            return item
+                        })
+                    }
+                })
+            }
         })
 
-        return ()=>{
+        return () => {
             channel.unbind_all()
-            channel.unsubscribe(`showtimes-${showtimeChose?.showtime?.id}`)
-            pusher.disconnect()
+            pusher.unsubscribe(channelName)
         }
         
     },[showtimeChose])
@@ -127,8 +147,9 @@ const ContentTicket = ({datas, categories}) => {
                                         item?.Showtimes.map( itemShowtime => 
                                             <button 
                                                 key={itemShowtime?.id}
-                                                className={`py-2 text-[11px] font-bold rounded ${(showtimeChose?.showtime?.id == itemShowtime.id) ? 'bg-primary-container text-on-primary shadow-sm' : 'bg-surface-container text-on-secondary-fixed hover:bg-surface-container-high'}`}
-                                                onClick={()=>choseMovieUI(item, itemShowtime)}
+                                                disabled={chairChosen.length == 0 ? false : true}
+                                                className={`py-2 text-[11px] font-bold rounded ${(showtimeChose?.showtime?.id == itemShowtime.id) ? 'bg-primary-container text-on-primary shadow-sm' : 'bg-surface-container text-on-secondary-fixed hover:bg-surface-container-high'} ${chairChosen.length == 0 ? '' : 'cursor-not-allowed'}`}
+                                                onClick={()=>choseMovieUI(item, itemShowtime, listChair?.name_theater)}
                                                 >{getHourString(itemShowtime?.start_time)}
                                             </button>
                                         )
@@ -173,7 +194,14 @@ const ContentTicket = ({datas, categories}) => {
                 <div className="seat-grid flex flex-col gap-3 items-center">
                     <div className="space-y-4" id="grid-container">
                         
-                        <Theater list={listChair?.list} count={listChair?.count} chairChosen={chairChosen} setChairChosen={setChairChosen} showtimeChose={showtimeChose?.showtime}/>
+                        <Theater 
+                            list={listChair?.list} 
+                            count={listChair?.count} 
+                            chairChosen={chairChosen} 
+                            setChairChosen={setChairChosen} 
+                            showtimeChose={showtimeChose?.showtime}
+                            socketId={socketId}
+                            setUserEarnPoint={setUserEarnPoint}/>
 
                     </div>
                 </div>
@@ -187,12 +215,12 @@ const ContentTicket = ({datas, categories}) => {
 
                             <div className="flex items-center gap-3">
                                 <div className="w-6 h-6 rounded-md bg-seat-vip shadow-md shadow-amber-200"></div>
-                                <span className="text-sm font-semibold text-secondary">(VIP {showtimeChose?.showtime?.price/1000}K)</span>
+                                <span className="text-sm font-semibold text-secondary">(VIP {(Number(showtimeChose?.showtime?.price) + 10000)/1000}K)</span>
                             </div>
 
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-6 rounded-md bg-seat-sweetbox shadow-md shadow-pink-200"></div>
-                                <span className="text-sm font-semibold text-secondary">(Ghế Đôi {showtimeChose?.showtime?.price/1000}K)</span>
+                                <span className="text-sm font-semibold text-secondary">(Ghế Đôi {showtimeChose?.showtime?.price*2/1000}K)</span>
                             </div>
                     </div>
                 </div>
@@ -208,7 +236,7 @@ const ContentTicket = ({datas, categories}) => {
                             </div>
                             <div className="flex-1">
                                 <p className="font-bold text-on-surface text-sm">{showtimeChose?.movie?.name}</p>
-                                <p className="text-[12px] text-secondary">Suất: {showtimeChose?.showtime?.startTime} • Phòng 04</p>
+                                <p className="text-[12px] text-secondary">Suất: {getHourString(showtimeChose?.showtime?.start_time)} • {listChair?.name_theater}</p>
                                 <p className="text-[12px] font-bold text-primary mt-1">{chairChosen.length}x Vé</p>
                             </div>
                         </div>
@@ -219,61 +247,75 @@ const ContentTicket = ({datas, categories}) => {
                     <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-secondary">Ghế đã chọn</span>
-                            <span className="font-bold text-on-surface">{chairChosen.join(', ')}</span>
+                            <span className="font-bold text-on-surface">{chairChosen.map(item => item.seat_number).join(', ')}</span>
                         </div>
 
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-secondary">Đơn giá</span>
-                            <span className="font-bold text-on-surface">{calculatorPrice(chairChosen.length, showtimeChose?.showtime?.price)}</span>
+                            <span className="font-bold text-on-surface">{formatVND2(calculatorPrice(chairChosen, showtimeChose?.showtime?.price))}</span>
                         </div>
 
-                        <div className="flex justify-between items-center text-sm">
-                            <div></div> 
+                        <div className="text-sm flex-col items-end">
                             <div className="flex items-center gap-3 cursor-pointer select-none">
-                                <label htmlFor="points" className="font-medium text-gray-700 order-1">
-                                    Tích điểm
-                                </label>
                                 <input 
                                     id="points" 
                                     type="radio" 
-                                    name="payment-method" 
-                                    value="points"
-                                    checked={points}
-                                    onChange={()=>setPoints(pre => !pre)}
+                                    value={earnPoint}
+                                    checked={userEarnPoint == null ? false : true}
+                                    onChange={()=>setEarnPoint(pre => !pre)}
                                     className="w-4 h-4 text-blue-600 accent-blue-600 order-2 cursor-pointer"
                                 />
+                                <label htmlFor="points" className="font-medium text-gray-700 order-1">
+                                    Tích điểm
+                                </label>
+                               
+                            </div>
+                            <div className="flex items-center gap-3 cursor-pointer select-none">
+                                <input 
+                                    id="not_points" 
+                                    type="radio" 
+                                    value={earnPoint}
+                                    checked={userEarnPoint == null ? true : false}
+                                    readOnly
+                                    className="w-4 h-4 text-blue-600 accent-blue-600 order-2 cursor-pointer"
+                                    />
+                                <label htmlFor="not_points" className="font-medium text-gray-700 order-1">
+                                    Không Tích điểm
+                                </label>
                             </div>
                         </div>
-
-                        {/* <div className="flex justify-between items-center text-sm">
-                            <span className="text-secondary">Khuyến mãi</span>
-                            <span className="font-bold text-green-600">-10.000đ</span>
-                        </div> */}
+                        {
+                            userEarnPoint &&  <div className="flex justify-between items-center text-sm">
+                                <span className="text-secondary">Khách hàng</span>
+                                <span className="font-bold text-on-surface">{userEarnPoint?.fullname}</span>
+                            </div>
+                        }
+                       
                     </div>
                 </div>
 
                 <div className="p-6 bg-white border-t border-outline-variant/30 space-y-4 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
                     <div className="flex justify-between items-end">
                         <span className="text-secondary font-medium">Tổng tiền tạm tính</span>
-                        <span className="font-headline-md text-primary leading-none">{calculatorPrice(chairChosen.length, showtimeChose?.showtime?.price)}</span>
+                        <span className="font-headline-md text-primary leading-none">{formatVND2(calculatorPrice(chairChosen, showtimeChose?.showtime?.price))}</span>
                     </div>
 
-                    <button className="w-full py-4 bg-primary-container text-on-primary font-bold rounded-xl shadow-lg shadow-primary-container/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all">
-                        <span className="material-symbols-outlined">
-                            <Printer size={20} />
-                        </span>Thanh toán &amp; In vé
-                    </button>
+                    <TicketDownloader 
+                        ticketData={showtimeChose} 
+                        chairChosen={chairChosen} 
+                        nameTheater={listChair?.name_theater} 
+                        setShowtimeChose={setShowtimeChose}
+                        setChairChosen={setChairChosen}
+                        userEarnPoint={userEarnPoint}
+                        setUserEarnPoint={setUserEarnPoint}/>
 
-                    <button className="w-full py-3 bg-surface-container text-secondary font-label-bold rounded-xl hover:bg-surface-container-high transition-colors">
-                        Hủy giao dịch
-                    </button>
                 </div>
             </aside>}
         </main>
     </>
 }   
 
-const Theater = ({list, count, chairChosen, setChairChosen, showtimeChose}) => {
+const Theater = ({list, count, chairChosen, setChairChosen, showtimeChose, socketId, setUserEarnPoint}) => {
     if(!list || !count) return 
     let length = calculatorNumberOfRow(list, count)
     let objRender = []
@@ -296,36 +338,70 @@ const Theater = ({list, count, chairChosen, setChairChosen, showtimeChose}) => {
     }
     return <>
         {
-            objRender.map( (item, index) => <RowTheater key={index} list={item.listRender} chairChosen={chairChosen} setChairChosen={setChairChosen} showtimeChose={showtimeChose}/>)
+            objRender.map( (item, index) => 
+                <RowTheater 
+                    key={index} 
+                    list={item.listRender} 
+                    chairChosen={chairChosen} 
+                    setChairChosen={setChairChosen} 
+                    showtimeChose={showtimeChose} 
+                    socketId={socketId}
+                    setUserEarnPoint={setUserEarnPoint}
+                    />)
         }
     </>
 }
 
 // Tạo mỗi hàng ghế 
-const RowTheater = ({list, chairChosen, setChairChosen, showtimeChose}) => {
+const RowTheater = ({list, chairChosen, setChairChosen, showtimeChose, socketId, setUserEarnPoint}) => {
     let typeCssColorChair = {
         Standard: 'standard',
         VIP: 'vip',
         Sweetbox: 'sweetbox'
     }
-    const hanleChoseTicket = async (e) => {
-        let value = e.target.dataset.custome
-       
+
+    // chỉ áp dụng cho object có dạng key: value (với value là dữ liễu khác đối tượng, mảng)
+    const containValue = (list, value, key) => {
+        if(!list || !value || !key) return false
+        for(let i of list){
+            if(i[key] == value)
+                return true
+        }
+        return false
+    } 
+
+    const hanleChoseTicket = async (item) => {
+        let seatId = item.seat_number
         try{
-            await customeFetch(apiUserService.baseURL+'/bookings',
+            let containSeatId = containValue(chairChosen,seatId,'seat_number')
+            let url = '/bookings'
+            if(containSeatId)
+                url += '/unbook'
+            const res = await customeFetch(apiUserService.baseURL+url,
                 'authen',
                 'POST',
                 JSON.stringify({
-                    seat_id: e.target.id, 
-                    showtime_id: showtimeChose?.id || ""
+                    seat_number: seatId, 
+                    showtime_id: showtimeChose?.id,
+                    socket_id: socketId
                 })
             )
+
+            if(res.ok){
+                if(containSeatId)
+                    setChairChosen(pre => {
+                        let newState = pre.filter(item => item.seat_number != seatId)
+                        if(newState.length == 0)
+                            setUserEarnPoint(null)
+                        return newState
+                    })
+                else
+                    setChairChosen(pre => [...pre, item]) 
+            }
         }
         catch(err){
             console.log(err)
         }
-
-        setChairChosen(pre => [...pre, value])
     }
 
     return <div className="flex items-center gap-8">
@@ -338,11 +414,10 @@ const RowTheater = ({list, chairChosen, setChairChosen, showtimeChose}) => {
                         className={`h-8 rounded-lg text-[14px] flex items-center justify-center text-white 
                             ${item.type == 'Sweetbox' ? 'w-[68px]' : 'w-8'}
                             ${item.status == 'booked' ? ' bg-secondary/20 text-secondary/40 cursor-not-allowed' : 'cursor-pointer hover:ring-2 ring-primary ring-offset-2 transition-all'}
-                            ${chairChosen.includes(item.seat_number)? 'bg-primary text-secondary' : `bg-seat-${typeCssColorChair[item.type]}`}`}
+                            ${containValue(chairChosen,item.seat_number,'seat_number')? 'bg-primary text-secondary' : `bg-seat-${typeCssColorChair[item.type]}`}`}
                         title={item.seat_number}
-                        disabled={item.status == 'booked' ? true : false}
-                        onClick={hanleChoseTicket}
-                        data-custome={item.seat_number}
+                        disabled={item.status == 'booked'}
+                        onClick={()=>hanleChoseTicket(item)}
                         id={item.id}
                         >{item.seat_number}
                     </button>)

@@ -57,7 +57,7 @@ const ComfirmBoxShowtime = ({confirm, setConfirm, dataItemBeforeConfirm, setData
                     <div className="flex items-start gap-4">
                         <div className="flex-1">
                             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                                Xác nhận hành động
+                                Xác nhận xóa suất chiếu
                             </h3>
                             <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
                                 Bạn có chắc chắn muốn thực hiện hành động này không?

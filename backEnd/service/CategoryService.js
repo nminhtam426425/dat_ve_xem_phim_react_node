@@ -18,21 +18,29 @@ class CategoryService {
 
     getAll = async () => {
         return await Categories.findAll({
-            attributes: ['id','name']
+            attributes: ['id','name','age_permit']
         })
     }
 
-    create = async ({}) => {
+    create = async ({name, age_permit}) => {
         try{
-           
+            return Categories.create({
+                name,
+                age_permit
+            })
         }
         catch(err){
             throw new Error(err.message)
         }
     }
-    update = async ({}) => {
+    update = async ({id, name, age_permit}) => {
         try{
-          
+            let cateUpdate = await findObject(Categories, 'id', id)
+
+            let sourceObj = {name, age_permit}
+            cateUpdate = convertObjectForUpdate(cateUpdate,sourceObj)
+
+            return await cateUpdate.save()
         }
         catch(err){
             throw new Error(err.message)
@@ -40,7 +48,11 @@ class CategoryService {
     }
     delete = async (id) => {
         try{
-            
+            return await Categories.destroy({
+                where: {
+                    id: id
+                }
+            })
         }
         catch(err){
             throw new Error(err.message)
