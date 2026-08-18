@@ -31,11 +31,17 @@ const  DetailMovie = () => {
             const res = await customeFetch(apiUserService.baseURL+`/showtimes/user/${location?.state?.idMovie}/${dateChosen}`)
             if(res.ok){
                 const data = await res.json()
-                setShowtimeOfMovie(data)
+                setShowtimeOfMovie(data.map(item => {
+                    let showtime = item.Showtimes.sort((a,b) => new Date(a.start_time) - new Date(b.start_time))
+                    return {
+                        ...item,
+                        Showtimes: showtime
+                    }
+                }))
             }
         }
         getShowtimes()
-    },[dateChosen,setShowtimeOfMovie]) 
+    },[dateChosen,location?.state?.idMovie,setShowtimeOfMovie]) 
 
     let propsOfContent = {
         movie, 

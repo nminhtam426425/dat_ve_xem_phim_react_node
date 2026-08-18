@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {ChevronLeft, ChevronRight} from 'lucide-react'
-const DateSelector = ({ setOnDateSelect, }) => {
-    const getNextSevenDays = (dateMark=1) => {
+const DateSelector = ({ onDateSelectFirst ,setOnDateSelect, setOnDateSelectFirst }) => {
+    const getNextSevenDays = () => {
         const days = []
         const daysOfWeek = ['CNhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
 
         for (let i = 0; i < 7; i++) {
-            let current = new Date() 
-            if(dateMark != 1){
-                current.setDate(current.getDate() + dateMark)
-            }
+            let current = new Date(onDateSelectFirst) 
             current.setDate(current.getDate() + i)
 
             days.push({
@@ -24,23 +21,34 @@ const DateSelector = ({ setOnDateSelect, }) => {
 
     const [daysList, setDayList] = useState(getNextSevenDays())
     const [selectedId, setSelectedId] = useState(daysList[0].id)
-    const [dateMark, setDataMark] = useState(0)
 
     const handleSelect = (day) => {
         setSelectedId(day.id)
         setOnDateSelect(day.id)
     }
 
+    // di chuyển 7 ngày
+    const get7Days = (day) => {
+        setOnDateSelect(pre => {
+            let dateTmp = new Date(pre)
+            return new Date(dateTmp.setDate(dateTmp.getDate()+day)).toISOString().split('T')[0]
+        })
+        setOnDateSelectFirst(pre => {
+            let dateTmp = new Date(pre)
+            return new Date(dateTmp.setDate(dateTmp.getDate()+day)).toISOString().split('T')[0]
+        })
+    }
+
+    // khi có thay đổi ở lựa ngày ở input type date
     useEffect(()=>{
-        let temp = getNextSevenDays(dateMark)
+        let temp = getNextSevenDays()
         setDayList(temp)
         setSelectedId(temp[0].id)
-        setOnDateSelect(temp[0].id)
-    },[dateMark])
+    },[onDateSelectFirst])
 
     return (
         <div className="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar w-full xl:w-auto">
-            <ChevronLeft size={20} className='cursor-pointer' onClick={()=>setDataMark(pre => pre - 7)}/>
+            <ChevronLeft size={20} className='cursor-pointer' onClick={()=>get7Days(-7)}/>
             {daysList.map((day) => {
                 const isActive = day.id === selectedId
 
@@ -71,7 +79,7 @@ const DateSelector = ({ setOnDateSelect, }) => {
                     </button>
                 );
             })}
-             <ChevronRight size={20} className='cursor-pointer' onClick={()=>setDataMark(pre => pre + 7)}/>
+             <ChevronRight size={20} className='cursor-pointer' onClick={()=>get7Days(7)}/>
         </div>
     )
 }

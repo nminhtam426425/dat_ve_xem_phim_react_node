@@ -1,38 +1,40 @@
-import {handleDeleteData, customeFetch, apiUserService} from '../../../config.js'
+import {customeFetch, apiUserService,  handleUpdateData} from '../../../config.js'
 import { toast } from 'sonner'
 import { useLoading } from '../../../../LoadingContext.jsx'
-// confirm --> show modal
-// confirmYes --> xác nhận trạng thái
-const getUrlApi = (typeData, idToDelete) => {
-    return apiUserService.baseURL+`/${typeData}/${idToDelete}`
-}
 
-const ComfirmBox = ({confirm, setConfirm, dataItemBeforeConfirm, setDataItemBeforeConfirm, setDatas, type}) => {
+
+const ConfirmLockMovie = ({confirm, setConfirm, dataItemBeforeConfirm, setDataItemBeforeConfirm, setDatas, type}) => {
     const {showLoading, hideLoading} = useLoading()
     const handleConfirmYes = () => {
         const deleteData = async () => {
             showLoading("Đang xử lý dữ liệu ... ")
             try{
-                let api = getUrlApi(type, dataItemBeforeConfirm.id)
-                const res = await customeFetch(api,'authen','DELETE')
+                if(Number(dataItemBeforeConfirm.newShowtimes_count) > 0){
+                    toast.error(`Phim ${dataItemBeforeConfirm.title} đang có ${dataItemBeforeConfirm.newShowtimes_count} suất chiếu mới !`) 
+                    setConfirm('')
+                    hideLoading()
+                    return
+                }
+                let dataForApi = {
+                    id: dataItemBeforeConfirm.id,
+                    status: type == 'lock' ? 'ended' : 'showing'
+                }
+                const res = await customeFetch(apiUserService.baseURL+'/movies', 'authen','PUT', JSON.stringify(dataForApi))
                 if(res.ok){
-                    handleDeleteData(setDatas, 'id', dataItemBeforeConfirm.id)
-                    toast.success("Xóa thành công !")
+                    if(type == 'lock')
+                        dataItemBeforeConfirm.status = 'ended'
+                    else
+                        dataItemBeforeConfirm.status = 'showing'
+                    toast.success(`Đã ${type == 'lock' ? 'kết thúc' : 'mở lại'} phim ${dataItemBeforeConfirm.title}`)
+                    handleUpdateData(setDatas, 'id', dataForApi.id, dataItemBeforeConfirm)
                 }
-                else{
-                    const data = await res.json()
-                    if(type == 'branches/type/theater')
-                        data.message = "Thể loại phòng đang có phòng chiếu !"
-                    toast.error(data.message)
-                }
-                
             }
             catch(err){
-                toast.error("Xóa thất bại !")
+                toast.error("Thao tác thất bại !")
                 console.log(err)
             }
             setDataItemBeforeConfirm(null)
-            setConfirm(false)
+            setConfirm('')
             hideLoading()
         }
         deleteData()
@@ -47,7 +49,7 @@ const ComfirmBox = ({confirm, setConfirm, dataItemBeforeConfirm, setDataItemBefo
                     <div className="flex items-start gap-4">
                         <div className="flex-1">
                             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                                Xác nhận hành động
+                                Xác nhận {type == 'lock' ? 'kết thúc suất chiếu của phim' : 'mở lại suất chiếu của phim'} 
                             </h3>
                             <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
                                 Bạn có chắc chắn muốn thực hiện hành động này không?
@@ -76,4 +78,4 @@ const ComfirmBox = ({confirm, setConfirm, dataItemBeforeConfirm, setDataItemBefo
     </>
 }
 
-export default ComfirmBox
+export default ConfirmLockMovie

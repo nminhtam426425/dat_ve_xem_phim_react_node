@@ -1,14 +1,15 @@
-import {PlayCircle, Star, Ticket} from "lucide-react"
+import {PlayCircle, Ticket} from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 
 const convertDuration = (duration) => {
     if(!duration) return ""
-    return `${Math.floor(duration/60)}H ${duration%60}M`
+    return `${Math.floor(duration/60)} giờ ${duration%60} phút`
 }
 
 const MovieCard = ({data, setTrailer}) => {
     const navigate = useNavigate()
+    // cho mobile khi click hiện 2 button đặt vé và xem traler
     const [isClick, setIsClick] = useState(false)
 
     const goToDetail = (idMovie) => {
@@ -38,13 +39,6 @@ const MovieCard = ({data, setTrailer}) => {
                         <PlayCircle size={20}/>
                     </span><span className="material-symbols-outlined text-[12px] md:text-[14px]">Xem trailer</span>
                 </button>
-            </div>
-
-            <div className="absolute top-4 left-4 bg-black/70 backdrop-blur px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                <span className="material-symbols-outlined text-primary text-[16px]">
-                    <Star size={20}/>
-                </span>
-                <span className="text-label-bold text-white">{data.score}</span>
             </div>
         </div>
 

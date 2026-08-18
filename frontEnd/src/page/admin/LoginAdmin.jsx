@@ -1,12 +1,13 @@
 import {branch, apiUserService, customeFetch, handleInputOnChange, setAccessToken} from '../config.js'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useLoading } from '../../LoadingContext.jsx'
 
 const LoginAdmin = () => {
     const navigate = useNavigate() 
+    const location = useLocation()
     const [notPassValid, setNotPassValid] = useState(true)
     const {setUserInfo} = useLoading()
     const [isLogin,setIsLogin] = useState(false)
@@ -17,9 +18,14 @@ const LoginAdmin = () => {
       type: ['admin','staff']
     })
 
+    useEffect(()=>{
+      if(location?.state?.message)
+        toast.error(location?.state?.message)
+    },[location?.state?.message])
+
     const [authenError,setAuthenError] = useState({
-      username_0:"",
-      password_0:""
+      username_0:"err",
+      password_0:"err"
     })
 
     const handleChange = (e) => {
@@ -45,10 +51,12 @@ const LoginAdmin = () => {
             )
 
             const [dataUserInfo, dataUserBranch] = await Promise.all([resUserInfo.json(), resUserBranch.json()])
-
+            console.log(dataUserBranch)
             setUserInfo({
+              name: dataUserBranch.name,
+              idBranch: dataUserBranch.id,
               ...dataUserInfo,
-              ...dataUserBranch
+              
             })
 
             if(dataUserInfo.role == 'admin')
@@ -59,8 +67,11 @@ const LoginAdmin = () => {
               navigate('/')
             }
           } 
-          else 
-            toast.error("Đăng nhập thất bại !")
+          else {
+            const data = await resLogin.json()
+            toast.error(data.message)
+          }
+          
           setIsLogin(pre => !pre)
         }
         catch(err){

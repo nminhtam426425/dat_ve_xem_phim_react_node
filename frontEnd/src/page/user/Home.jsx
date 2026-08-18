@@ -3,25 +3,17 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { customeFetch, apiUserService } from "../config"
 import WatchTrailer from "./components/modal/WatchTrailer"
+import { useDebounce } from 'use-debounce'
 
-const datas1 = {
-  trending: {
-      id:'90',
-      title:'Mưa đỏ',
-      description: "Bộ phim về cuộc chiến 81 ngày đêm bảo vệ thành cổ trước bàn đàm phán Paris về chấm dứt chiến tranh ở Việt Nam.",
-      poster_url: 'https://mir-s3-cdn-cf.behance.net/project_modules/1400/bda5e6232709307.68a21568c92f9.jpg',
-      trailer_url: 'https://youtu.be/BD6PoZJdt_M?si=YrnpLxiBQaNB2DPo',
-      
-  }
-}
 // dùng searchQuery để render ra giao diện danh sách khi tìm kiếm phim
 const  Home = () => {
     const navigate = useNavigate()
     const [datas, setDatas] = useState([])
     const [dataRenderList, setDataRenderList] = useState([])
-    const [trending, setTrending] = useState(datas1.trending)
+    const [trending, setTrending] = useState({})
     const [searchQuery, setSearchQuery] =  useState("")
     const [trailer, setTrailer] = useState("")
+    const [debouncedSearch] = useDebounce(searchQuery, 500)
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -49,7 +41,7 @@ const  Home = () => {
                         background_url: dataTrending[0].background_url
                     })
                     setDataRenderList(data.showing)
-                    setDatas(data.showing.slice(0,6))
+                    setDatas(data)
                 }
             }
             catch(err){
@@ -62,9 +54,9 @@ const  Home = () => {
     return <>
         <Header setSearchQuery={setSearchQuery} searchQuery={searchQuery}/>
         {
-          searchQuery != ""
+          debouncedSearch != ""
           ?
-          <ContentList searchQuery={searchQuery} setSearchKeyword={setSearchQuery} dataRender={dataRenderList}/>
+          <ContentList searchQuery={debouncedSearch} setSearchKeyword={setSearchQuery} dataRender={dataRenderList}/>
           :
           <ContentHome setTrailer={setTrailer} dataRender={datas} trending={trending}/>
         }

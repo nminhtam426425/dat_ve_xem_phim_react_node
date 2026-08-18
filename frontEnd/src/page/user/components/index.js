@@ -10,6 +10,7 @@ import ContentHistory from "./ContentHistory"
 import ContentMyVoucher from "./ContentMyVoucher"
 import ContentListVoucher from "./ContentListVoucher"
 import ContetnAboutUs from "./ContentAboutUs"
+import DetailComingSoon from "./DetailComingSoon"
 
 export {
     Footer,
@@ -23,5 +24,6 @@ export {
     ContentHistory,
     ContentMyVoucher,
     ContentListVoucher,
-    ContetnAboutUs
+    ContetnAboutUs,
+    DetailComingSoon
 }

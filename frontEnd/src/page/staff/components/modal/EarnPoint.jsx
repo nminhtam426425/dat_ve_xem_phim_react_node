@@ -1,19 +1,20 @@
 import { useEffect, useState, useMemo } from "react"
-import {CircleCheck, CircleX, Search} from "lucide-react"
+import {CircleCheck, CircleX, Search, Plus} from "lucide-react"
 import { removeVietnameseTones, customeFetch,apiUserService } from "../../../config"
-import { formatPhone } from "../../../validate"
 import Paging from "../../../admin/components/Paging"
+import { useDebounce } from 'use-debounce'
 
-const EarnPoint = ({confirm, setConfirm, setUserEarnPoint}) => {
+const EarnPoint = ({confirm, setConfirm, setUserEarnPoint, setNewCustomer}) => {
     const [datas, setDatas] = useState([])
     const [searchKeyword, setSearchKeyword] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 3
+    const [debouncedSearch] = useDebounce(searchKeyword, 500)
 
     useEffect(() => {
         const getDatasAccount = async () => {
             try{
-                const res = await customeFetch(apiUserService.baseURL+'/users/all','authen','GET')
+                const res = await customeFetch(apiUserService.baseURL+'/users/all-staff','authen','GET')
                 if(res.ok){
                     const data = await res.json()
                     setDatas(data.filter(item => item.role == "user" && item.is_activating == 1))
@@ -28,13 +29,13 @@ const EarnPoint = ({confirm, setConfirm, setUserEarnPoint}) => {
 
     const filteredData = useMemo(()=>{
         return datas.filter(item => {
-            const keyword = removeVietnameseTones(searchKeyword.trim())
+            const keyword = removeVietnameseTones(debouncedSearch.trim())
             const matchSearch = keyword === "" || removeVietnameseTones(item.fullname).includes(keyword) 
                                                || removeVietnameseTones(item.email).includes(keyword)
     
             return matchSearch 
         }) 
-    },[datas, searchKeyword])
+    },[datas, debouncedSearch])
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage)
 
@@ -47,7 +48,7 @@ const EarnPoint = ({confirm, setConfirm, setUserEarnPoint}) => {
     },[filteredData,currentPage,itemsPerPage])
 
     const resetFilter = () => {
-        setSearchKeyword("")
+        //setSearchKeyword("")
     }
 
     const handleSearch = (e) => {
@@ -79,25 +80,34 @@ const EarnPoint = ({confirm, setConfirm, setUserEarnPoint}) => {
                         </button>
                     </div>
 
-                    <div className="relative min-w-[300px]">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary" data-icon="search">
-                            <Search size={20} />
-                        </span>
-                        <input 
-                            className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/50 rounded-lg focus:ring-1 transition-all text-body-md outline-none" 
-                            placeholder="Tìm kiếm theo tên, email..." 
-                            type="text"
-                            value={searchKeyword}
-                            onChange={handleSearch}/>
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary" data-icon="search">
+                                <Search size={20} />
+                            </span>
+                            <input 
+                                className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/50 rounded-lg focus:ring-1 transition-all text-body-md outline-none" 
+                                placeholder="Tìm kiếm theo tên, email..." 
+                                type="text"
+                                value={searchKeyword}
+                                onChange={handleSearch}/>
+                        </div>
+                        <button 
+                                className="bg-primary hover:bg-primary-container text-white px-6 py-3 rounded-lg font-label-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-primary/20"
+                                onClick={()=>setNewCustomer({})}>
+                                <span className="material-symbols-outlined">
+                                    <Plus size={20}/>
+                                </span>Khách hàng mới
+                        </button>
                     </div>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-surface-container-low/50">
-                                    <th className="px-6 py-4 font-label-bold text-secondary text-sm uppercase tracking-wider">Người dùng</th>
-                                    <th className="px-6 py-4 font-label-bold text-secondary text-sm uppercase tracking-wider">Số điện thoại</th>
-                                    <th className="px-6 py-4 font-label-bold text-secondary text-sm uppercase tracking-wider text-right">Thao tác</th>
+                                    <th className="px-6 py-4 font-label-bold text-secondary text-sm uppercase tracking-wider w-2/5">Người dùng</th>
+                                    <th className="px-6 py-4 font-label-bold text-secondary text-sm uppercase tracking-wider w-2/5">Tên đăng nhập</th>
+                                    <th className="px-6 py-4 font-label-bold text-secondary text-sm uppercase tracking-wider w-1/5 text-right">Thao tác</th>
                                 </tr>
                             </thead>
 
@@ -120,14 +130,14 @@ const EarnPoint = ({confirm, setConfirm, setUserEarnPoint}) => {
                                                 </div>
                                             </td>
                                             
-                                            <td className="px-6 py-4 text-on-surface-variant font-medium">{formatPhone(item.phone)}</td>
+                                            <td className="px-2 py-4 text-on-surface-variant font-medium max-w-[220px] truncate">{item.username}adadadad</td>
                                            
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2 transition-opacity">
+                                                <div className="flex justify-end gap-1 transition-opacity">
                                                     <button 
                                                         className={`p-1.5 rounded text-white transition-colors bg-green-400`}
                                                         onClick={()=>handleChoseUser(item)}>
-                                                        <span className="material-symbols-outlined text-[14px] flex items-center gap-2">
+                                                        <span className="material-symbols-outlined text-[12px] flex max-h-[20px] items-center gap-2">
                                                             <CircleCheck size={20} /> Tích điểm
                                                         </span>
                                                     </button>

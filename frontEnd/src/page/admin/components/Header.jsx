@@ -2,6 +2,7 @@ import { Bell, Menu} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useLoading } from '../../../LoadingContext'
 import { branch } from '../../config'
+import WidgetChat from './WidgetChat.jsx'
 
 const Header = () => {
     const {userInfo} = useLoading()
@@ -19,8 +20,7 @@ const Header = () => {
 
         <div className="flex items-center gap-4">
             <span className="relative material-symbols-outlined p-2 text-secondary hover:bg-surface-container-high rounded-full transition-all cursor-pointer" data-icon="notifications">
-                <Bell size={20} />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-surface"></span>
+                <WidgetChat/>
             </span>
             
             <div className="flex items-center gap-3 pl-2">

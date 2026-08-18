@@ -62,6 +62,7 @@ const handleAddShowtimeAfterBE = (pre, data ,titleMovie) => {
                         sold: 0,
                         price: data.price,
                         max_tickets: data.max_tickets,
+                        limited_number_of_minutes: data.limited_number_of_minutes,
                         point: data.point
                     }
                 ]
@@ -71,27 +72,59 @@ const handleAddShowtimeAfterBE = (pre, data ,titleMovie) => {
     })
 }
 
-const handleUpdateShowtimeAfterBE = (pre, idRoom ,onDateSelect ,theaterState, idUpdate, titleMovie) => {
+const handleUpdateShowtimeAfterBE = (pre, idRoom, idOldRroom ,onDateSelect ,theaterState, idUpdate, titleMovie, idMovie) => {
     if (!pre) return []
 
     return pre.map(room => {
-        if (room.room_id == idRoom) {
+        // trường hợp sửa cùng phòng
+        if (room.room_id == idRoom && idOldRroom == idRoom) {
             return {
                 ...room,
                 showtimes: room.showtimes.map(showtime => {
                     if(showtime.id == idUpdate){
                         return {
                             ...showtime,
+                            movie_id: idMovie,
                             name: titleMovie,
                             startTime: `${onDateSelect} ${theaterState.startTime}`,
                             endTime: `${onDateSelect} ${theaterState.endTime}`,
                             price: theaterState.price,
                             max_tickets: theaterState.max_tickets,
+                            limited_number_of_minutes: theaterState.limited_number_of_minutes,
                             point: theaterState.point
                         }
                     }
                     return showtime
                 })
+            }
+        }
+        // sửa khác phòng, xóa suất chiếu ở phòng cũ
+        else if (idOldRroom != idRoom && room.room_id == idOldRroom){
+            return {
+                ...room,
+                showtimes: room.showtimes.filter( showtime => showtime.id != idUpdate)
+            }
+        }
+        // sửa khác phòng, thêm suất chiếu ở phòng mới
+        else if (idOldRroom != idRoom && room.room_id == idRoom){
+            return {
+                ...room,
+                showtimes: [
+                    ...(room.showtimes || []), 
+                    {
+                        id: idUpdate,
+                        name: titleMovie,
+                        movie_id: idMovie,
+                        room_id: idRoom,
+                        startTime: `${onDateSelect} ${theaterState.startTime}`,
+                        endTime: `${onDateSelect} ${theaterState.endTime}`,
+                        sold: 0,
+                        price: theaterState.price,
+                        max_tickets: theaterState.max_tickets,
+                        limited_number_of_minutes: theaterState.limited_number_of_minutes,
+                        point: theaterState.point
+                    }
+                ]
             }
         }
         return room
@@ -104,40 +137,16 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
     const [typeVND, setTypeVND] = useState(null)
     const [idMovie, setIdMovie] = useState("0")
     const [dataForm, setDataForm] = useState({})
+    const [listMovies, setListMovies] = useState([])
     const [movieDuration, setMovieDuration]= useState(null)
     const [showtime, setShowtime] = useState({
         startTime: "",
         endTime:"",
-        price: 0,
+        price: 50000,
         max_tickets: 4,
-        point: 1
+        point: 1,
+        limited_number_of_minutes: 5
     })
-
-    useEffect(()=>{
-        if(dataItem?.id){
-            setShowtime({
-                startTime: dataItem?.startTime?.substring(11,19),
-                endTime: dataItem?.endTime?.substring(11,19),
-                price: Number(dataItem.price),
-                max_tickets: dataItem.max_tickets,
-                point: dataItem.point
-            })
-            setIdMovie(dataItem?.movie_id || "0")
-            setIdTheater(dataItem?.room_id || "0")
-            setMovieDuration(getDuration(dataForm.movies, dataItem.movie_id))
-        }
-        else{
-            setShowtime({
-                startTime: "",
-                endTime:"",
-                price: 0,
-                max_tickets: 4,
-                point: 1
-            })
-            setIdMovie("0")
-            setIdTheater("0")
-        }
-    },[dataItem])
 
     useEffect(()=>{
         const getDataForm = async () => {
@@ -145,8 +154,11 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                 const res = await customeFetch(apiUserService.baseURL+'/movies/showtime','authen','GET')
                 const res2 = await customeFetch(apiUserService.baseURL+'/branches/theaters','authen','GET')
                 if(res.ok && res2.ok){
-                    const data1 = await res.json()
-                    const data2 = await res2.json()
+                    let data1 = await res.json()
+                    setListMovies(data1)
+                    let data2 = await res2.json()
+                    data1 = data1.filter( item => new Date(item.release_date) - new Date(onDateSelect) <= 0)
+                    data2 = data2.sort((a,b) => a.id - b.id)
                     setDataForm(
                         {
                             movies: data1,
@@ -161,6 +173,38 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
         }
         getDataForm()
     },[])
+
+    // chỉ lấy những bộ phim theo onDateSelect, phim có thể chưa đến ngày lên suất
+    useEffect(()=>{
+        if(listMovies.length == 0) return 
+        setDataForm(pre => {
+            return {
+                ...pre,
+                movies: listMovies.filter( item => new Date(item.release_date) - new Date(onDateSelect) <= 0)
+            }
+        })
+    },[onDateSelect])
+
+    useEffect(()=>{
+        if(dataItem?.id){
+            setShowtime({
+                startTime: dataItem?.startTime?.substring(11,19),
+                endTime: dataItem?.endTime?.substring(11,19),
+                price: Number(dataItem.price),
+                max_tickets: dataItem.max_tickets,
+                point: dataItem.point,
+                limited_number_of_minutes: dataItem.limited_number_of_minutes
+            })
+            setIdMovie(dataItem?.movie_id || "0")
+            setIdTheater(dataItem?.room_id || "0")
+            setMovieDuration(getDuration(dataForm.movies, dataItem.movie_id))
+        }
+        else{
+            setIdMovie("0")
+            setIdTheater("0")
+        }
+    },[dataItem])
+
 
     const handleChangeSelect = (e) => {
         const {id, value} = e.target
@@ -202,6 +246,18 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
 
     const handleAddShowtime = async (e) => {
         e.preventDefault()
+        if(idTheater == '0'){
+            toast.error("Vui lòng chọn phòng chiếu!")
+            return
+        }
+        else if(idMovie == '0'){
+            toast.error("Vui lòng chọn bộ phim!")
+            return
+        }
+        else if(showtime.price < 10000){
+            toast.error("Giá suất không hợp lệ, giá tối thiểu 10.000đ !")
+            return
+        }
         showLoading()
         try{
             let method = 'POST'
@@ -216,17 +272,19 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                     end_time: `${onDateSelect} ${showtime.endTime}`,
                     price: Number(showtime.price),
                     max_tickets: showtime.max_tickets,
+                    limited_number_of_minutes: showtime.limited_number_of_minutes,
                     point: showtime.point,
                 }
             }
             else{
                 dataForApi = {
-                    distance_minutes: 5,
+                    distance_minutes: 0,
                     movie_id:Number(idMovie),
                     room_id:Number(idTheater),
                     start_time: `${onDateSelect} ${showtime.startTime}`,
                     price: Number(showtime.price),
                     max_tickets: showtime.max_tickets,
+                    limited_number_of_minutes: showtime.limited_number_of_minutes,
                     point: showtime.point,
                 }
             }
@@ -235,8 +293,9 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                 const data = await res.json()
                 
                 if(dataForApi.showtime_id){
+                    let idOldRroom = dataItem?.room_id
                     setDatas( pre => {
-                        return handleUpdateShowtimeAfterBE(pre, idTheater, onDateSelect ,showtime, data.id, getTitle(dataForm.movies, idMovie))
+                        return handleUpdateShowtimeAfterBE(pre, idTheater, idOldRroom, onDateSelect ,showtime, data.id, getTitle(dataForm.movies, idMovie), idMovie)
                     })
                     toast.success("Cập nhật suất chiếu thành công !")
                 }
@@ -246,6 +305,17 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                     })
                     toast.success("Thêm suất chiếu thành công !")
                 }
+                setShowtime({
+                    startTime: "",
+                    endTime:"",
+                    price: 50000,
+                    max_tickets: 4,
+                    point: 1,
+                    limited_number_of_minutes: 5
+                })
+                setIdMovie("0")
+                setIdTheater("0")
+                setMovieDuration(null)
             }
             else{
                 const data = await res.json()
@@ -268,11 +338,13 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                         <label className="block text-sm font-bold text-on-surface uppercase tracking-wider">Chọn phim đang chiếu</label>
 
                         <div className="relative">
-                            <select 
+                            <select
                                 id="movies"
                                 value={idMovie}
                                 onChange={handleChangeSelect}
-                                className="w-full appearance-none bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none">
+                                disabled={dataItem?.sold > 0}
+                                className={`w-full appearance-none bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-3 
+                                focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none ${dataItem?.sold > 0 ?'cursor-not-allowed':''}`}>
                                 <option value="0">Chọn một bộ phim</option>
                                 {
                                     dataForm?.movies?.map( item => <option key={item.id} value={item.id}>{`${item.title} - ${item.duration}'`}</option>)
@@ -292,7 +364,9 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                             <select 
                                 value={idTheater}
                                 onChange={handleChangeSelect}
-                                className="w-full appearance-none bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none">
+                                disabled={dataItem?.sold > 0}
+                                className={`w-full appearance-none bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 
+                                py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none ${dataItem?.sold > 0 ?'cursor-not-allowed':''}`}>
                                 <option value="0">Chọn phòng</option>
                                 {
                                     dataForm?.theaters?.map( item => <option key={item.id} value={item.id}>{item.name} - {item.TypeTheater?.type_name}</option>)
@@ -320,7 +394,8 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                                 type="date"
                                 id="date"
                                 readOnly
-                                value={onDateSelect}/>
+                                value={onDateSelect}
+                                required/>
                         </div>
 
                         <div className="space-y-2">
@@ -329,8 +404,10 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                                 className="w-full bg-white border border-outline-variant/30 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all" 
                                 type="time"
                                 id="startTime"
+                                readOnly={dataItem?.sold > 0}
                                 value={showtime?.startTime}
-                                onChange={handleOnChangeTime}/>
+                                onChange={handleOnChangeTime}
+                                required/>
                         </div>
 
                         <div className="space-y-2">
@@ -341,6 +418,7 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                                 id="endTime"
                                 value={showtime?.endTime}
                                 readOnly
+                                required
                                 />
                         </div>
                     </div>
@@ -348,7 +426,7 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
 
                 <div className="bg-surface-container-low/50 p-6 border-t border-outline-variant/20 flex items-center justify-start gap-4">
                     <div className="space-y-2">
-                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-widest">Giá cho suất chiếu</label>
+                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-widest">Giá suất</label>
                         <input 
                             className="w-full bg-white border border-outline-variant/30 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all" 
                             type={typeVND == 'price' ? "number" : "text"}
@@ -357,16 +435,20 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                             onFocus={()=>setTypeVND('price')}
                             onBlur={()=>setTypeVND(null)}
                             onChange={handleOnChangeTime}
+                            required
                             />
                     </div>
                     <div className="space-y-2">
-                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-widest">Số vé tối đa</label>
+                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-widest">Vé tối đa</label>
                         <input 
                             className="w-full bg-white border border-outline-variant/30 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all" 
                             type="number"
                             id="max_tickets"
                             value={showtime?.max_tickets}
                             onChange={handleOnChangeTime}
+                            min={2}
+                            max={10}
+                            required
                             />
                     </div>
                     <div className="space-y-2">
@@ -375,8 +457,23 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                             className="w-full bg-white border border-outline-variant/30 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all" 
                             type="number"
                             id="point"
+                            min={1}
                             value={showtime?.point}
                             onChange={handleOnChangeTime}
+                            required
+                            />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="block text-[11px] font-bold text-secondary uppercase">Giữ chỗ (phút)</label>
+                        <input 
+                            className="bg-white border border-outline-variant/30 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary transition-all" 
+                            type="number"
+                            id="limited_number_of_minutes"
+                            min={1}
+                            max={10}
+                            value={showtime?.limited_number_of_minutes}
+                            onChange={handleOnChangeTime}
+                            required
                             />
                     </div>
                 </div>
@@ -387,7 +484,9 @@ const FromShowtime = ({setDataItem, dataItem, setDatas, onDateSelect}) => {
                         type="button"
                         onClick={closeModal}>Hủy
                     </button>
-                    <button className="px-10 py-3 bg-primary text-white font-bold rounded-lg shadow-lg shadow-primary/20 hover:bg-primary-container active:scale-95 transition-all" type="submit">
+                    <button 
+                        type="submit"
+                        className="px-10 py-3 bg-primary text-white font-bold rounded-lg shadow-lg shadow-primary/20 hover:bg-primary-container active:scale-95 transition-all">
                                                     Lưu suất chiếu
                     </button>
                 </div>

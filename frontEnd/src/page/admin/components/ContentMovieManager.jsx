@@ -1,18 +1,18 @@
-import {Search, Plus, ChevronDown, Pencil, PlayCircle, Calendar, History, Trash2, TrendingUp} from 'lucide-react'
+import {Search, Plus, ChevronDown, Pencil, PlayCircle, Calendar, History, TrendingUp, ListFilter, EyeClosed, Eye} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Paging from './Paging.jsx'
 import { removeVietnameseTones } from '../../config.js'
 import { formatVND2,formatDate } from '../../validate.js'
 
-const changeStatus = (status) => {
-    const temp = {
-        showing: 'Đang chiếu',
-        coming_soon: 'Sắp chiếu',
-        ending: 'Kết thúc'
-    }
-    return temp[status]
-}
+// const changeStatus = (status) => {
+//     const temp = {
+//         showing: 'Đang chiếu',
+//         coming_soon: 'Sắp chiếu',
+//         ending: 'Kết thúc'
+//     }
+//     return temp[status]
+// }
 
 // chỉ áp dụng cho mảng object
 // datas: mảng cần duyệt 
@@ -33,17 +33,22 @@ const formatShowCategories = (categories) => {
     return result.join(', ')
 }
 
-const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, currentPage, setConfirm, categories, setDataItemBeforeConfirm, setShowFormTrending, movieTrending}) => {
+const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
+    currentPage, setConfirm, categories, setDataItemBeforeConfirm, 
+    setShowFormTrending, movieTrending, setDatas, setTypeLockOrUnlock}) => {
+
     const [selectedCategory, setSelectedCategory] = useState(0)
     const [statusSelected, setStatusSelected] = useState('showing')
     const [searchKeyword, setSearchKeyword] = useState('')
-    
+    const [isOpenFilter, setIsOpenFilter] = useState(false)
 
     const filteredData  = useMemo(()=>{
         return datas.filter((movie) => {
             const matchCategory = Number(selectedCategory) === 0 || movie.Categories.some((c) => c.id === Number(selectedCategory))
     
-            const matchStatus = statusSelected === 'all' || movie.status === statusSelected
+            const matchStatus =  movie.status === statusSelected || 
+                (statusSelected == 'not_trailer' && movie.trailer_url == null) || 
+                (statusSelected == 'not_trailer' && movie.trailer_url == "")
     
             const keyword = removeVietnameseTones(searchKeyword.trim())
             const matchSearch = keyword === "" || removeVietnameseTones(movie.title).includes(keyword) || removeVietnameseTones(movie.director).includes(keyword)
@@ -66,7 +71,6 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
 
     const resetFilter = () => {
         setSearchKeyword("")
-        setStatusSelected("all")
         setSelectedCategory(0)
     }
 
@@ -85,9 +89,24 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
         setStatusSelected(status)
     }
 
-    const handleDelete = (item) => {
+    const handleDelete = (item, type) => {
+        setTypeLockOrUnlock(type)
         setDataItemBeforeConfirm(item)
         setConfirm(true)
+    }
+
+    const toggleDropdown = () => {
+        setIsOpenFilter(true)
+    }
+
+    const setDatasForFilter = (filter) => {
+        if (filter === 'revenue') 
+            setDatas(pre => [...pre].sort((a, b) => b.total_revenue - a.total_revenue))
+        else if (filter === 'release_date') 
+            setDatas(pre => [...pre].sort((a, b) => new Date(b.release_date) - new Date(a.release_date)))
+        else if (filter === 'showtimes') 
+            setDatas(pre => [...pre].sort((a, b) => b.showtimes_count - a.showtimes_count))
+        setIsOpenFilter(false)
     }
 
     return <div className="p-gutter max-w-container-max mx-auto w-full">
@@ -203,6 +222,11 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                         onClick={() => handleButtonStatus('ended')}>
                             Kết thúc
                     </button>
+                    <button 
+                        className={`px-4 py-1.5 rounded-md text-label-bold ${statusSelected==='not_trailer' ? 'bg-white shadow-sm text-primary': 'text-secondary hover:bg-white/50 transition-all'}`}
+                        onClick={() => handleButtonStatus('not_trailer')}>
+                            Không Trailer
+                    </button>
                 </div>
             </div>
 
@@ -212,8 +236,43 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                 <span className="material-symbols-outlined" data-icon="add">
                     <Plus size={20} />
                 </span>
-                    Thêm phim mới
+                    Phim mới
             </button>
+            <div className='relative inline-block'>
+            {/* Button Filter */}
+                <button 
+                    onClick={toggleDropdown}
+                    className={`p-2 text-secondary hover:bg-surface-container border border-outline-variant/30 rounded-lg transition-all ${isOpenFilter ? 'bg-surface-container' : ''}`}
+                >
+                    <span className="material-symbols-outlined flex items-center justify-center">
+                        <ListFilter size={20}/>
+                    </span>
+                </button>
+
+                {isOpenFilter && (
+                    <div className='absolute right-0 mt-2 w-48 flex flex-col items-start z-10 bg-white dark:bg-zinc-900 border border-outline-variant/30 rounded-lg shadow-lg p-1'>
+                        <button 
+                            onClick={() => setDatasForFilter('release_date')}
+                            className='w-full text-left hover:bg-surface-container p-2 text-sm rounded transition-colors'
+                        >
+                            Thời gian phát hành
+                        </button>
+                        <button 
+                            onClick={() => setDatasForFilter('revenue')}
+                            className='w-full text-left hover:bg-surface-container p-2 text-sm rounded transition-colors'
+                        >
+                            Doanh thu phim
+                        </button>
+                        <button 
+                            onClick={() => setDatasForFilter('showtimes')}
+                            className='w-full text-left hover:bg-surface-container p-2 text-sm rounded transition-colors'
+                        >
+                            Số suất chiếu
+                        </button>
+                    </div>
+                    )}
+            </div>
+           
         </section>
 
         <div className="bg-white rounded-xl shadow-md border border-outline-variant/20 overflow-hidden">
@@ -222,6 +281,7 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                     <thead className="bg-surface-container-low">
                         <tr>
                             <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Phim</th>
+                            <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Đạo diễn</th>
                             <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Thể loại</th>
                             <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30">Sô suất chiếu</th>
                             <th className="px-6 py-4 font-label-bold text-secondary-fixed-dim uppercase text-[11px] tracking-widest border-b border-outline-variant/30 text-center">Doanh thu</th>
@@ -244,6 +304,10 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                                                 <div className="text-secondary text-xs">Phát hành:{formatDate(item?.release_date)}</div>
                                             </div>
                                         </div>
+                                    </td>
+
+                                    <td className="px-6 py-4">
+                                        <span className="text-body-md text-on-surface-variant">{item?.director}</span>
                                     </td>
 
                                     <td className="px-6 py-4">
@@ -277,10 +341,16 @@ const ContentMovieManager = ({datas, setDataItem, itemsPerPage, setCurrentPage, 
                                             </button>
                                             <button 
                                                 className="p-2 rounded-lg hover:bg-error-container hover:text-error transition-all text-tertiary" 
-                                                title="Xóa"
-                                                onClick={()=>handleDelete(item)}>
+                                                title="Kết thúc phim"
+                                                onClick={()=>handleDelete(item, item?.status != 'ended' ? 'lock' : 'unlock')}>
                                                 <span className="material-symbols-outlined text-[20px]" data-icon="delete">
-                                                    <Trash2 size={20} />
+                                                    {
+                                                        item?.status != 'ended'
+                                                        ?
+                                                        <EyeClosed size={20} />
+                                                        :
+                                                        <Eye size={20}/>
+                                                    }
                                                 </span>
                                             </button>
                                         </div>

@@ -1,4 +1,4 @@
-import {TrendingUp, DollarSign,Ticket, User2, ChevronLeft, ChevronRight} from "lucide-react"
+import {TrendingUp, DollarSign,Ticket, User2, ChevronLeft, ChevronRight, TrendingDown} from "lucide-react"
 import ChartAdminBranch from "./ChartAdminBranch"
 import { getDaysRange, compareDates, formatDate, formatVND2 } from "../../validate"
 import { useEffect, useState } from "react"
@@ -11,7 +11,7 @@ const getCss = (index) => {
     else return "bg-outline"
 }
 
-const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, weekMark, setWeekMark}) => {
+const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, weekMark, setWeekMark, percentUpRevenue}) => {
     
     const [valuesRevenue, setDataRevenue] = useState([])
     const [movieRevenue, setMovieRevenue] = useState([])
@@ -52,6 +52,26 @@ const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, 
         setTypeMark(type)
     }
 
+    const countByCondition = (array, key, value) => {
+        if(!array) return ""
+        return array.filter( item => item[key] == value).length
+    }
+    
+    
+    const countByDateCondition = (array, value) => {
+        if(!array) return ""
+        return array.filter( item => {
+            let created = new Date(item.created_at)
+            return created.getMonth() <= value
+        }).length
+    }
+
+    const countMonthNow = (array) => {
+        if(!array) return ""
+        let monthNow = new Date()
+        return array.length - countByDateCondition(array, monthNow.getMonth() - 1)
+    }
+
     return <>
          <div className="p-8 space-y-8 max-w-container-max mx-auto w-full">
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -63,10 +83,10 @@ const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, 
                             </span>
                         </div>
                         
-                        <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                        <span className={`flex items-center text-xs font-bold  px-2 py-1 rounded-full ${percentUpRevenue > 0 ? 'text-green-600 bg-green-50' : 'text-primary bg-primary/20'}`}>
                             <span className="material-symbols-outlined text-xs mr-1" data-icon="trending_up">
-                                <TrendingUp size={20}/>
-                            </span>+12.5%
+                                {percentUpRevenue > 0 ? <TrendingUp size={20}/> : <TrendingDown size={20}/>}
+                            </span>{percentUpRevenue > 0 ? `+${percentUpRevenue}` : `${percentUpRevenue}`}%
                         </span>
                     </div>
 
@@ -81,12 +101,6 @@ const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, 
                                 <DollarSign size={20}/>
                             </span>
                         </div>
-                        
-                        <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                            <span className="material-symbols-outlined text-xs mr-1" data-icon="trending_up">
-                                <TrendingUp size={20}/>
-                            </span>+12.5%
-                        </span>
                     </div>
 
                     <p className="text-secondary font-label-bold text-sm mb-1 uppercase tracking-wider">Tổng doanh thu</p>
@@ -101,17 +115,17 @@ const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, 
                             </span>
                         </div>
 
-                        <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                        {/* <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
                             <span className="material-symbols-outlined text-xs mr-1" data-icon="trending_up">
                                 <TrendingUp size={20}/>
                             </span>+8.2%
-                        </span>
+                        </span> */}
                     </div>
                     <p className="text-secondary font-label-bold text-sm mb-1 uppercase tracking-wider">Số vé đã bán</p>
                     <h3 className="font-headline-md text-headline-md text-on-surface">{datas?.tickets?.length || 0}</h3>
                 </div>
 
-                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-shadow group">
+                {/* <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-shadow group">
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-3 bg-tertiary-fixed rounded-lg text-on-tertiary-fixed group-hover:bg-on-tertiary-fixed group-hover:text-white transition-all">
                             <span className="material-symbols-outlined" data-icon="group">
@@ -121,13 +135,13 @@ const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, 
                         <span className="flex items-center text-xs font-bold text-green-400 bg-green-50 px-2 py-1 rounded-full">
                             <span className="material-symbols-outlined text-xs mr-1" data-icon="trending_up">
                                 <TrendingUp size={20}/>
-                            </span>+4.1%
+                            </span>+{Math.floor((countMonthNow(datas?.users?.filter(item => item.role == 'user'))/datas?.users?.length)*100)}%
                         </span>
                     </div>
 
                     <p className="text-secondary font-label-bold text-sm mb-1 uppercase tracking-wider">Khách hàng</p>
-                    <h3 className="font-headline-md text-headline-md text-on-surface">1.150</h3>
-                </div>
+                    <h3 className="font-headline-md text-headline-md text-on-surface">{countByCondition(datas?.users, 'role', 'user')}</h3>
+                </div> */}
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -168,7 +182,7 @@ const ContentAdminBranch = ({datas, dayMark, setDayMark, typeMark, setTypeMark, 
                 <div className="bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant/20 shadow-sm">
                     <div className="flex flex-between">
                         <h3 className="font-headline-md text-lg font-bold text-on-surface mb-6">Phim doanh thu cao nhất</h3>
-                        <h3 className="ml-4 text-primary hover:underline cursor-pointer">Xem tất cả</h3>
+                        {/* <h3 className="ml-4 text-primary hover:underline cursor-pointer">Xem tất cả</h3> */}
                     </div>
                    
                     

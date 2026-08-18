@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {AlarmCheck, Armchair, ArrowRight, Calendar, ChevronRight, Clock, Ticket, ArrowBigLeft, TicketPercent} from "lucide-react"
-import {toast} from 'sonner'
 import { formatVND2, formatDate } from "../../validate"
 import { customeFetch, apiUserService, getAccessToken, setTmpId, getTmpId } from "../../config"
 import TimerAlram from "./TimerAlram"
@@ -23,34 +22,31 @@ const calculatorPrice = (chairChosen, price) => {
 
     return amount
 }
-
+// 9704198526191432198
+// NCB
+// 07/15
+// NGUYEN VAN A
 const ContentTicket = ({
     movie, showtime, listChair, socketId, setConfirm, setShowVoucher, 
-    priceBooking, setPriceBooking ,valueBeforeDiscount, setValueBeforeDiscount, setMsg, useVoucher}) => {
+    priceBooking, setPriceBooking ,valueBeforeDiscount, setValueBeforeDiscount, setMsg, useVoucher, setConfirmBook, setUseVoucher}) => {
 
     const navigate = useNavigate()
     const [chairChosen, setChairChosen] = useState([])
     const {showLoading, hideLoading} = useLoading()
 
-    const payment =  async () => {
+    const payment =  () => {
         let dataForApi = {
-            showtime_id: showtime.id,
+            showtime: showtime,
             price_at_booking: priceBooking,
             role: 'user',
-            useVoucher: useVoucher
+            useVoucher: useVoucher,
+            title: movie?.title || "",
+            seats: chairChosen.map(item => item.seat_number),
+            valueBeforeDiscount
         }
-        console.log(useVoucher)
         showLoading("Đang xử lý, vui lòng chờ !")
-        try{
-            const res = await customeFetch(apiUserService.baseURL+'/bookings/payment','authen','POST',JSON.stringify(dataForApi))
-            if(res.ok){
-                toast.success("Đã đặt vé thành công, vé đã được lưu trong lịch sử vé của bạn !")
-                navigate('/user/history')
-            }
-        }
-        catch(err){
-            console.log(err)
-        }
+        setConfirmBook(dataForApi)
+        
         hideLoading()
     }
 
@@ -61,6 +57,8 @@ const ContentTicket = ({
     useEffect(()=>{
         setValueBeforeDiscount(calculatorPrice(chairChosen, showtime?.price))
         setPriceBooking(calculatorPrice(chairChosen, showtime?.price))
+        if(chairChosen.length == 0)
+            setUseVoucher([])
     },[chairChosen])
 
     return <main className="bg-background2 font-body-md">
@@ -111,6 +109,7 @@ const ContentTicket = ({
                             setChairChosen={setChairChosen} 
                             showtime={showtime} 
                             socketId={socketId}
+                            setMsg={setMsg}
                             setConfirm={setConfirm}/>
 
                     </div>
@@ -211,7 +210,8 @@ const ContentTicket = ({
                                 setChairChosen={setChairChosen}
                                 socketId={socketId}
                                 setMsg={setMsg}
-                                setConfirm={setConfirm}/>
+                                setConfirm={setConfirm}
+                                setUseVoucher={setUseVoucher}/>
                         </div>
                     </div>
                     <div className="h-px bg-outline-variant w-full"></div>
@@ -236,7 +236,7 @@ const ContentTicket = ({
     </main>
 }
 
-const Theater = ({list, count, chairChosen, setChairChosen ,showtime ,socketId, setConfirm }) => {
+const Theater = ({list, count, chairChosen, setChairChosen ,showtime ,socketId, setMsg, setConfirm }) => {
     if(!list || !count) return 
     let length = calculatorNumberOfRow(list, count)
     let objRender = []
@@ -267,6 +267,7 @@ const Theater = ({list, count, chairChosen, setChairChosen ,showtime ,socketId, 
                     setChairChosen={setChairChosen} 
                     showtime={showtime} 
                     socketId={socketId}
+                    setMsg={setMsg}
                     setConfirm={setConfirm}/>
             )
         }
@@ -274,12 +275,59 @@ const Theater = ({list, count, chairChosen, setChairChosen ,showtime ,socketId, 
 }
 
 // Tạo mỗi hàng ghế 
-const RowTheater = ({list, chairChosen, setChairChosen, showtime, socketId, setConfirm}) => {
+const RowTheater = ({list, chairChosen, setChairChosen, showtime, socketId, setMsg, setConfirm}) => {
     //const {showLoading, hideLoading} = useLoading()
     let typeCssColorChair = {
         Standard: 'standard',
         VIP: 'vip',
         Sweetbox: 'sweetbox'
+    }
+    
+    // thuật toán mồ côi 
+    // 0: ghế trống, 1: ghế đã đặt, 2: tường
+    // vi phạm dạng [0, 1, 0, 0]
+    // vi phạm dạng [0, 1, 0, 1], ... 
+    const isValidSelection = (row, selected, chairChosen=[]) => {
+        let tempRow = row.map(item => ({ ...item }))
+       
+        // đánh dấu ghế khách chọn thành 1 (đã đặt)
+        for(let i of tempRow){
+            if(i.id == selected.id){
+                i.status = 'booked'
+                break
+            }
+        }
+        for(let i of chairChosen){
+            for(let j of tempRow){
+                if(i.id == j.id){
+                    j.status = 'booked'
+                    break
+                }
+            
+            }
+        }
+         // trường hợp đặc biệt, khi số lượng ghế trống < 5 thì không thể tạo ra ghế trống bị cô lập ==> bỏ qua bước kiểm tra
+        let sizeExpect = tempRow.filter(item => item.status == 'empty')
+        if(sizeExpect.length < 5)
+            return true
+    
+        for (let i = 0; i < tempRow.length; i++) {
+            if (tempRow[i].status === 'empty') { 
+                let leftBoundary = (i === 0) ? 2 : tempRow[i - 1].status === 'empty' ? 0 : 1
+                let rightBoundary = (i === tempRow.length - 1) ? 2 : tempRow[i + 1].status === 'empty' ? 0 : 1
+    
+                // Nếu cả 2 bên đều là ghế đã đặt (1) hoặc tường (2)
+                if (leftBoundary !== 0 && rightBoundary !== 0) {
+                    if(i != 0 || i != tempRow.length - 1)
+                        console.log(tempRow[i - 1], tempRow[i + 0])
+                    console.log(leftBoundary, rightBoundary)
+                    return false // Vi phạm: Tạo ra 1 ghế trống bị cô lập
+                }
+                    
+            }
+        }
+    
+        return true
     }
 
     // chỉ áp dụng cho object có dạng key: value (với value là dữ liễu khác đối tượng, mảng)
@@ -296,7 +344,15 @@ const RowTheater = ({list, chairChosen, setChairChosen, showtime, socketId, setC
         let seatId = item.seat_number
         //showLoading("Đang xử lý, vui lòng chờ !")
         try{
+            
             let containSeatId = containValue(chairChosen,seatId,'seat_number')
+            if(!containSeatId){
+                if(!isValidSelection(list, item, chairChosen)){
+                    setMsg("Vui lòng chọn ghế khác, vì ghế này sẽ tạo ra ghế trống bị cô lập !")
+                    setConfirm(true)
+                    return
+                }
+            }
             let url = '/bookings'
             let authen = 'authen'
             let tmpToken = getAccessToken()
@@ -308,21 +364,26 @@ const RowTheater = ({list, chairChosen, setChairChosen, showtime, socketId, setC
             }
 
             if(!tmpToken){
-                url = '/bookings/non-login'
-                authen = 'non-authen'
-                body = {
-                    seat_number: seatId,
-                    user_id: !tempIdUser ? "" : tempIdUser,
-                    showtime_id: showtime?.id,
-                    socket_id: socketId
-                }
+                setMsg("Vui lòng đăng nhập để mua vé !")
+                setConfirm(true)
+                return
+                // url = '/bookings/non-login'
+                // authen = 'non-authen'
+                // body = {
+                //     seat_number: seatId,
+                //     user_id: !tempIdUser ? "" : tempIdUser,
+                //     showtime_id: showtime?.id,
+                //     socket_id: socketId
+                // }
             }
 
             if(containSeatId)
                 url += '/unbook'
 
-            if(chairChosen.length == showtime?.max_tickets && !containSeatId)
+            if(chairChosen.length == showtime?.max_tickets && !containSeatId){
+                setMsg("Đã đạt số vé tối đa!")
                 setConfirm(true)
+            }
             else{
                 const res = await customeFetch(apiUserService.baseURL+url,
                     authen,

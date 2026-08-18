@@ -88,10 +88,12 @@ const getWeekRange = (date) => {
     const monday = new Date(date)
     monday.setDate(date.getDate() - distanceToMonday)
     monday.setHours(0)
+    monday.setMinutes(0)
     
     const sunday = new Date(monday)
     sunday.setDate(monday.getDate() + 6)
     sunday.setHours(23)
+    sunday.setMinutes(59)
 
     return {
         start: monday,
@@ -128,6 +130,11 @@ const compareDates = (date) => {
     return today.getTime() == date.getTime()
 }
 
+const formatTimeChat = (date) => {
+    if(!date) return ""
+    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 export {
     formatDate,
     formatPhone,
@@ -138,5 +145,6 @@ export {
     calculatorPrice,
     getDaysRange,
     compareDates,
-    formatDateHour
+    formatDateHour,
+    formatTimeChat
 }

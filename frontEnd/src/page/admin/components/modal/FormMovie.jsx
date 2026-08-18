@@ -139,6 +139,14 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
     // 0 có id     --> thêm mới
     const handleAddMovie = async (e) => {
         e.preventDefault()
+        if(categorieForCreate.length == 0){
+            toast.error("Chọn ít nhất 1 thể loại phim!")
+            return
+        }
+        if(moviePoster.url == null){
+            toast.error("Vui lòng chọn ảnh Poster!")
+            return
+        }
         showLoading('Đang xử lý dữ liệu !')
         const method = (dataItem.id) ? 'PUT' : 'POST'
         let dataForApi = {} 
@@ -337,7 +345,8 @@ const FormMovie = ({dataItem,setDataItem, setDatas, categories}) => {
                                     id="duration" 
                                     placeholder="VD: 120" 
                                     type="number"
-                                    min="60"
+                                    min="30"
+                                    max={300}
                                     value={movie.duration}
                                     onChange={handleInputChange}
                                     required

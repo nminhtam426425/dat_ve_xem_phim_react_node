@@ -9,7 +9,7 @@ import {useLoading} from '../../../LoadingContext'
 const  Login = () => {
     const clientId = import.meta.env.VITE_CLIENT_GOOGLE_ID
     const navigate = useNavigate() 
-    const {setUserInfo} = useLoading()
+    const {setUserInfo, showLoading, hideLoading} = useLoading()
     const location = useLocation()
     const [isLogin, setIsLogin] = useState(false)
     const [notPassValid, setNotPassValid] = useState(true)
@@ -26,7 +26,6 @@ const  Login = () => {
 
     useEffect(() => {
       if (location?.state?.user) {
-        console.log("Đã nhận được dữ liệu từ Register:", location.state.user)
         setAuthen(location.state.user)
         setNotPassValid(false)
       }
@@ -104,6 +103,26 @@ const  Login = () => {
       }
     }
 
+    const handleForgetPass = async (e) => {
+      e.preventDefault()
+      showLoading("Vui lòng chờ ... !")
+      try{
+        const res = await customeFetch(apiUserService.baseURL+'/users/forget-password','non-authen','POST',JSON.stringify({username: authen.username}))
+        hideLoading()
+        if(res.ok)
+          navigate('/xac-nhan')
+        else{
+          const data = await res.json()
+          toast.error(data.message)
+        }
+      }
+      catch(err){
+        hideLoading()
+        console.log(err)
+      }
+     
+    }
+
     const handleError = () => {
       toast.error('Đăng nhập thất bại')
     }
@@ -120,7 +139,7 @@ const  Login = () => {
           
             <div className="glass-panel border border-white/50 rounded-xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
               <h1 className="font-headline-lg text-headline-lg text-on-surface mb-8 text-center">Đăng nhập</h1>
-              <form action="#" className="space-y-6" method="POST">
+              <div className="space-y-6">
 
                 <div className="space-y-2">
                     <label className="font-label-bold text-label-bold text-on-surface-variant" htmlFor="username">
@@ -147,7 +166,15 @@ const  Login = () => {
                         Mật khẩu
                         <p id="title_01"  className={`text-primary ${authenError.password_0 == 'err' ? 'text-[0px]' : 'text-[9px]'}`}>{authenError.password_0}</p>
                     </label>
-                    <Link className="text-label-sm font-label-bold text-primary hover:underline transition-all">Quên mật khẩu</Link>
+                    {
+                      authenError.username_0 == ""
+                      && <button
+                          onClick={handleForgetPass}
+                          className="text-label-sm font-label-bold text-primary hover:underline transition-all"
+                          > Quên mật khẩu
+                      </button>
+                    }
+                   
                   </div>
 
                   <div className="relative flex items-center">
@@ -180,7 +207,7 @@ const  Login = () => {
                     autoComplete="new-password">
                     {isLogin ? '... Đang đăng nhập' : 'Đăng nhập'}
                   </button>
-              </form>
+              </div>
              
               <div className="flex items-center my-8">
               <div className="flex-grow h-px bg-outline-variant"></div>

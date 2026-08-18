@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { customeFetch, apiUserService, getAccessToken, pusher} from "../config"
 import Alert from "./components/modal/Alert"
 import Voucher from "./components/modal/Voucher"
+import ConfirmBook from "./components/modal/ConfirmBook"
 
 const TicketChoice = () => {
     const location = useLocation()
@@ -19,6 +20,7 @@ const TicketChoice = () => {
     const [msg, setMsg] = useState('Đã đạt đến số vé tối đa !')
     // các voucher sử dụng
     const [useVoucher, setUseVoucher] = useState([])
+    const [confirmBook, setConfirmBook] = useState(null)
 
     // kiểm tra xem nếu chưa đăng nhập thì gọi api lấy trạng thái vé tương ứng là không cần đăng nhập
     useEffect(() => {
@@ -117,20 +119,24 @@ const TicketChoice = () => {
         setShowVoucher,
         setPriceBooking,
         setValueBeforeDiscount,
-        setMsg
+        setMsg,
+        setConfirmBook,
+        setUseVoucher
     }
 
     return <>
         <Header/>
         <ContentTicket {...propsOfContent}/>
-        <Alert confirm={confirm} setConfirm={setConfirm} message={msg}/>
+        <Alert confirm={confirm} setConfirm={setConfirm} message={msg} setConfirmBook={setConfirmBook}/>
         <Voucher 
             showVoucher={showVoucher} 
             setShowVoucher={setShowVoucher} 
             priceBooking={valueBeforeDiscount}
+            priceAfterDiscount={priceBooking}
             setPriceBooking={setPriceBooking}
             useVoucher={useVoucher}
             setUseVoucher={setUseVoucher}/>
+        <ConfirmBook confirm={confirmBook} setConfirm={setConfirmBook}/>
         <Footer/>
     </>
 }

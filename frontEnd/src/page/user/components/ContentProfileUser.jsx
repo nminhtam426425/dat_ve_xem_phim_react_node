@@ -24,6 +24,7 @@ const ContentProfileUser = ({userInfo, setDataItem, avatar, setAvatar, imageInpu
                 const res = await customeFetch(apiUserService.baseURL+'/users/spending','authen','GET')
                 if(res.ok){
                     const data = await res.json()
+                    console.log(data)
                     setDataSpending(data)
                 }
             }
@@ -46,12 +47,7 @@ const ContentProfileUser = ({userInfo, setDataItem, avatar, setAvatar, imageInpu
                         <div className="p-6 rounded-xl bg-zinc-900 border border-outline-variant/10 flex flex-col gap-2">
                             <span className="text-white font-label-bold uppercase text-[12px]">Tổng chi tiêu</span>
                             <span className="font-headline-md text-white">{formatVND2(dataSpending.totalSpending)}</span>
-                            <div className="flex items-center gap-1 text-[12px] text-green-400 font-bold">
-                                <span className="material-symbols-outlined text-[16px]">
-                                    <TrendingUp size={20}/>
-                                </span>
-                                12% tháng trước
-                            </div>
+                            
                         </div>
                         <div className="p-6 rounded-xl bg-zinc-900 border border-outline-variant/10 flex flex-col gap-2">
                         <span className="text-white font-label-bold uppercase text-[12px]">Số vé đã mua</span>

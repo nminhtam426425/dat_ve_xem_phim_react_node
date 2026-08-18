@@ -1,4 +1,4 @@
-import {Plus, Trash2, Pencil} from 'lucide-react'
+import {Plus, Trash2, Pencil, Eye} from 'lucide-react'
 import DateSelector from './DateSelector'
 import { toast } from 'sonner'
 
@@ -37,14 +37,14 @@ const typeTheater = (id) => {
         4: 'bg-yellow-100 text-yellow-700',
         5: 'bg-primary/10 text-primary'
     }
-    return temp[id]
+    return temp[(id%5)+1]   
 }
 
 const formatHourMinute = (time) => {
     return time < 10 ? '0'+time : time
 }
 
-const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, setConfirm, setDataItemBeforeConfirm}) => {
+const ContentShowtime = ({setDataItem, datas, onDateSelect, onDateSelectFirst, setOnDateSelectFirst, setOnDateSelect, setConfirm, setDataItemBeforeConfirm,setShowtime}) => {
     const gridStyle = { gridTemplateColumns: `180px repeat(${times.length}, minmax(0, 90px))`}
 
     const handleDelete = (showtime, item, index) => {
@@ -60,11 +60,13 @@ const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, set
     }
 
     const handleUpdate = (showtime) => {
-        if(showtime.sold > 0 ){
-            toast.error('Không thể cập nhật suất chiếu đã có vé được bán ra!')
-            return 
-        }
         setDataItem(showtime)
+    }
+
+    const handleDateHiddenClick = (e) => {
+        let day = new Date(e.target.value).toISOString().split('T')[0]
+        setOnDateSelect(day)
+        setOnDateSelectFirst(day)
     }
 
     return <div className="max-w-container-max mx-auto w-full p-6">
@@ -76,26 +78,13 @@ const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, set
 
         <section className="bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 mb-8">
             <div className="flex flex-col xl:flex-row items-center gap-6">
-                <DateSelector setOnDateSelect={setOnDateSelect}/>
+                <DateSelector onDateSelectFirst={onDateSelectFirst} setOnDateSelect={setOnDateSelect} setOnDateSelectFirst={setOnDateSelectFirst}/>
+
+                <input type="date" id="date_hidden_chosen" className='' onChange={handleDateHiddenClick} value={onDateSelect}/>
 
                 <div className="h-10 w-px bg-outline-variant/30 hidden xl:block"></div>
 
                 <div className="flex flex-wrap gap-4 w-full xl:flex-1">
-                    <div className="flex-1 min-w-[200px]">
-                        {/* <label className="block text-xs font-bold text-secondary uppercase mb-2 ml-1">Phim đang chiếu</label>
-                        <div className="relative">
-                            <select className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-2.5 appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
-                                <option>Tất cả phim</option>
-                                <option>Oppenheimer</option>
-                                <option>Barbie</option>
-                                <option>Dune: Part Two</option>
-                            </select>
-                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-secondary">
-                                <ChevronDown size={20} />
-                            </span>
-                        </div> */}
-                    </div>
-
                     <button 
                         className="p-3 bg-primary-container text-on-primary px-4 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary-container/30 active:scale-95 transition-transform"
                         onClick={()=>{setDataItem({})}}>
@@ -166,11 +155,19 @@ const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, set
                                                 <div className="flex ">
                                                     <div className="flex justify-end">
                                                         <button
+                                                            title='Xem chi tiết'
+                                                            className="p-1 rounded-lg hover:bg-yellow-100 transition-all text-tertiary"
+                                                            onClick={()=>setShowtime(showtime)}>
+                                                            <span className="text-yellow-700"><Eye size={12}/></span>
+                                                        </button>
+                                                        <button
+                                                            title='Sửa suất chiếu'
                                                             className="p-1 rounded-lg hover:bg-surface-container transition-all text-tertiary"
                                                             onClick={()=>handleUpdate(showtime, item)}>
                                                             <span className="text-yellow-700"><Pencil size={12}/></span>
                                                         </button>
                                                         <button
+                                                            title='Xóa suất chiếu'
                                                             className="p-1 rounded-lg hover:bg-error-container hover:text-error transition-all text-tertiary"
                                                             onClick={()=>handleDelete(showtime, item, index)}>
                                                             <span className="text-primary"><Trash2 size={12}/></span>
@@ -193,7 +190,6 @@ const ContentShowtime = ({setDataItem, datas, onDateSelect, setOnDateSelect, set
                         </div>
                     )
                 }
-               
             </div>
         </div> 
     </div>

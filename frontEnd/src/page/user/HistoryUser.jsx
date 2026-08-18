@@ -4,9 +4,11 @@ import ConfirmAvatar from "./components/modal/ConfirmAvatar"
 import ShowTicket from "./components/modal/ShowTicket"
 import { useLoading } from "../../LoadingContext"
 import { customeFetch, apiUserService } from "../config"
+import FormChangeChangePass from "./components/modal/FormChangePass"
 
 const  HistoryUser = () => {
     const {userInfo, setUserInfo} = useLoading()
+    const [showFormChangePass, setShowFormChangePass] = useState(null)
     const [ticketData, setTicketData] = useState(null)
     const [historyTicket, setHistoryTicket] = useState([])
     const [confirm, setConfirm] = useState(false)
@@ -43,10 +45,12 @@ const  HistoryUser = () => {
         imageInput,
         setUserInfo,
         historyTicket,
+        showFormChangePass,
         setAvatar,
         setConfirm,
         choseImgFormClient,
-        setTicketData
+        setTicketData,
+        setShowFormChangePass
     }
 
     let propsOfConfirm = {
@@ -60,6 +64,7 @@ const  HistoryUser = () => {
         <ContentHistory {...propsOFContet}/>
         <ConfirmAvatar {...propsOfConfirm}/>
         <ShowTicket ticketData={ticketData} setTicketData={setTicketData}/>
+        <FormChangeChangePass dataItem={showFormChangePass} setDataItem={setShowFormChangePass}/>
         <Footer/>
     </>
 }

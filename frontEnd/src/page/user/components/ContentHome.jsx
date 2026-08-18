@@ -29,11 +29,11 @@ const ContentHome = ({setTrailer, dataRender, trending}) => {
                     <div className="max-w-2xl space-y-6">
                         <div className="flex items-center space-x-3">
                             <span className="bg-primary-container px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest text-white">Trending Now</span>
-                            <span className="text-zinc-400 font-label-sm flex items-center gap-1">
+                            {/* <span className="text-zinc-400 font-label-sm flex items-center gap-1">
                                 <span className="material-symbols-outlined text-red-600 text-sm" data-icon="star">
                                     <Star size={20}/>
                                 </span> 10.0 Rating
-                            </span>
+                            </span> */}
                         </div>
 
                         <h1 className="font-headline-xl text-white">{trending.title}</h1>
@@ -80,7 +80,7 @@ const ContentHome = ({setTrailer, dataRender, trending}) => {
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                     {
-                        dataRender?.map( item => <MovieCard key={item.id} data={item} setTrailer={setTrailer}/>)
+                        dataRender?.showing?.slice(0,6)?.map( item => <MovieCard key={item.id} data={item} setTrailer={setTrailer}/>)
                     }
                 </div>
             </section>

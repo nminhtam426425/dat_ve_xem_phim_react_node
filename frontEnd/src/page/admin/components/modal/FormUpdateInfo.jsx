@@ -2,6 +2,7 @@ import {Calendar, Phone,Mail,FileBadge}from "lucide-react"
 import { useEffect, useState } from "react"
 import { handleInputOnChange, customeFetch, apiUserService } from "../../../config"
 import { formatPhone } from "../../../validate"
+import { toast } from "sonner"
 
 const FormUpdateInfo = ({dataItem, setDataItem, setForUserUpdate}) => {
     const [notPassValid, setNotPassValid] = useState(true)
@@ -32,6 +33,12 @@ const FormUpdateInfo = ({dataItem, setDataItem, setForUserUpdate}) => {
                 email: dataItem.email || "",
                 dob: dataItem.birthday || ""
             })
+            setUserInfoError( {
+                fullname_0: "",
+                phone_0: "",
+                email_0: "",
+                dob_0: ""
+            })
         }
         else{
             setUserInfoForm({
@@ -52,7 +59,7 @@ const FormUpdateInfo = ({dataItem, setDataItem, setForUserUpdate}) => {
             id: dataItem.id,
             fullname: userInfo.fullname,
             phone: userInfo.phone,
-            email: userInfo.email,
+            email: userInfo.email || "",
             birthday: userInfo.dob
         }
         const update = async (dataForApi) => {
@@ -63,8 +70,13 @@ const FormUpdateInfo = ({dataItem, setDataItem, setForUserUpdate}) => {
                         ...pre,
                         ...dataForApi
                     }))
-                    setDataItem(null)
+                    toast.success("Cập nhật thông tin thành công!")
                 }
+                else{
+                    const data = await res.json()
+                    toast.error(data.message)
+                }
+                setDataItem(null)
             }
             catch(err){
                 console.log(err)

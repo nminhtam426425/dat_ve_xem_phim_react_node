@@ -19,6 +19,7 @@ const ShowtimeManager = () => {
                 const res = await customeFetch(apiUserService.baseURL+'/branches/theaters','authen','GET')
                 if(res.ok){
                     const data = await res.json()
+                    console.log(data)
                     setTheaterOnBranch(data)
                 }
             }

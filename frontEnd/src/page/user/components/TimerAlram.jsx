@@ -2,11 +2,17 @@ import { useEffect, useState } from "react"
 import { customeFetch, apiUserService } from "../../config"
 
 // setConfirm -> dùng để tạo thanh thông báo
-const TimerAlram = ({showtime, chairChosen, setChairChosen, socketId, setMsg, setConfirm}) => {
+const TimerAlram = ({showtime, chairChosen, setChairChosen, socketId, setMsg, setConfirm, setUseVoucher}) => {
     const initialMinutes = showtime?.limited_number_of_minutes || 5
-    const [totalSeconds, setTotalSeconds] = useState(initialMinutes * 60)
+    const [totalSeconds, setTotalSeconds] = useState(initialMinutes*60)
     useEffect(() => {
-        if (!chairChosen || chairChosen.length == 0 ) return 
+        if (!chairChosen  ) return 
+
+        if (chairChosen.length == 0 ) {
+            setTotalSeconds(showtime?.limited_number_of_minutes*60)
+            setUseVoucher([])
+            return
+        }
 
         if (totalSeconds <= 0) {
             console.log("BÙM")
@@ -26,18 +32,18 @@ const TimerAlram = ({showtime, chairChosen, setChairChosen, socketId, setMsg, se
             try{
                 let dataForApi = {
                     showtime_id: showtime?.id,
-                    seats_id: chairChosen.map(item => item.id),
+                    seats_id: chairChosen.map(item => item.seat_number),
                     socket_id: socketId
                 }
                 const res = await customeFetch(
-                    apiUserService.baseURL+'/bookings/delete',
-                    'non-authen',
+                    apiUserService.baseURL+'/bookings/delete-my-ticket',
+                    'authen',
                     'POST',
                     JSON.stringify(dataForApi)
                 )
                 if(res.ok){
                     setChairChosen([])
-                    setTotalSeconds(showtime?.limited_number_of_minutes)
+                    setTotalSeconds(showtime?.limited_number_of_minutes*60)
                     setMsg('Vé của bạn đã hết thời gian giữ chỗ !')
                     setConfirm(true)
                 }

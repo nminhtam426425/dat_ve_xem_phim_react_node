@@ -1,7 +1,6 @@
 import React from 'react'
 import {Outlet, Navigate} from 'react-router-dom'
 import {jwtDecode} from 'jwt-decode'
-import { toast } from 'sonner'
 
 import {getAccessToken} from '../config.js'
 import LoginAdmin from './LoginAdmin.jsx'
@@ -24,19 +23,16 @@ const ProtectedRoute = ({ allowedRoles }) => {
     if(allowedRoles.includes('user') && !token)
         return <Navigate to="/login" replace />
 
-    if (!token) {
-        toast.error("Vui lòng đăng nhập")
-        return <Navigate to="/login/internal" replace />
-    }
-        
+    if (!token) 
+        return <Navigate to="/login/internal" state={{message: "Vui lòng đăng nhập"}} replace />
+    
     try {
         const decoded = jwtDecode(token)
 
         if (allowedRoles.includes(decoded.role)) 
             return <Outlet />
         else {
-            toast.error("Vui lòng thử lại sau !")
-            return <Navigate to="/login/internal" replace />
+            return <Navigate to="/login/internal" state={{message: "Vui lòng thử lại sau !"}} replace />
         }
     } catch (error) {
         console.error("Token không hợp lệ:", error)

@@ -2,7 +2,7 @@ import Avatar from "./Avatar"
 import AsideProfile from "./AsideProfile"
 import History from "./History"
 
-const ContentHistory = ({userInfo, avatar, setAvatar, imageInput, setConfirm, historyTicket, setTicketData}) => {
+const ContentHistory = ({userInfo, avatar, setAvatar, imageInput, setConfirm, historyTicket, setTicketData, setShowFormChangePass}) => {
 
     let propsOfAvatar = {
         userInfo,
@@ -17,7 +17,7 @@ const ContentHistory = ({userInfo, avatar, setAvatar, imageInput, setConfirm, hi
 
         <div className="max-w-container-max mx-auto px-gutter py-12">
             <div className="flex flex-col lg:flex-row gap-12">
-               <AsideProfile/>
+               <AsideProfile setShowFormChangePass={setShowFormChangePass}/>
 
                 <section className="flex-1 space-y-8">
                     <History historyTicket={historyTicket} setTicketData={setTicketData}/>

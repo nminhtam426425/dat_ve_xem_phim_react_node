@@ -1,36 +1,21 @@
-import { toast } from "sonner"
 import { getAccessToken } from "../../tokenStore"
 import { formatDate2 } from "../../validate"
-import { customeFetch, apiUserService } from "../../config"
 
-const ContentListVoucher = ({datas, setDatas}) => {
+const ContentListVoucher = ({datas, setConfirm, setDataBeforeConfirm}) => {
     return <main className="w-full bg-background2">
-        <RenderListVoucher data={datas} setDatas={setDatas}/>
+        <RenderListVoucher data={datas} setConfirm={setConfirm} setDataBeforeConfirm={setDataBeforeConfirm}/>
     </main>
 }
 
-const RenderListVoucher = ({data, setDatas}) => {
+const RenderListVoucher = ({data, setConfirm, setDataBeforeConfirm}) => {
 
-    const hanleExchange = async (idVoucher) => {
-        try{
-            const res = await customeFetch(apiUserService.baseURL+'/vouchers/user/exchange','authen','POST',JSON.stringify({idVoucher}))
-            console.log(res)
-            if(res.ok){
-                setDatas(prev =>prev.filter(item => item.id !== idVoucher))
-                toast.success("Bạn đã đổi thưởng thành công!")
-            }
-            else{
-                const data = await res.json()
-                toast.error(data.message)
-            }
-        }
-        catch(err){
-            console.log(err)
-        }
+    const hanleExchange = (voucher) => {
+        setDataBeforeConfirm(voucher)
+        setConfirm(true)
     }
 
     return <section className="p-2 md:p-4 lg:p-12">
-        <div className="flex gap-4 w-[300px] md:w-full flex-wrap justify-center">
+        <div className="flex gap-4 w-[300px] md:w-full flex-wrap justify-center relative">
             {
                 data.length > 0
                 ?
@@ -51,16 +36,22 @@ const RenderListVoucher = ({data, setDatas}) => {
                             <h3 className="text-xl font-bold text-white mb-2">Giảm {item.discount_type == 'fixed_amount' ? `${item.discount/1000}K` : item.discount+'%'}</h3>
                             <p className="text-zinc-400 text-sm mb-4 line-clamp-2">Cho đơn hàng tối thiếu: {`${item.min_order_value/1000}K`}.</p>
                             
-                            {item.max_discount_value&&<p className="text-zinc-400 text-sm mb-4 line-clamp-2">Giảm tối đa: {`${item.max_discount_value/1000}K`}.</p>}
+                            {item.max_discount_value&&<p className="text-white font-bold mb-4 line-clamp-2">Giảm tối đa: {`${item.max_discount_value/1000}K`}.</p>}
                             
                             <p className="text-zinc-400 text-sm mb-4 line-clamp-2">Điểm để đôi thưởng: {item.point_cost}.</p>
                             <div className="flex items-center justify-between">
+                            {
+                                item.point_cost==0 
+                                ?
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Hết hạn</span>
+                                   <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Hết hạn</span>
                                     <span className="text-sm font-semibold text-zinc-300">{formatDate2(item.expiry_date)}</span>
                                 </div>
+                                :
+                                <div className="flex flex-col"></div>
+                            }  
                                 <button
-                                    onClick={() => hanleExchange(item.id)}
+                                    onClick={() => hanleExchange(item)}
                                     className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg text-sm transition-colors shadow-lg shadow-red-900/20"
                                     >
                                     Đổi thưởng

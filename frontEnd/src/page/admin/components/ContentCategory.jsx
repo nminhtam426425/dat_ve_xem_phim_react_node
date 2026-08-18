@@ -95,7 +95,7 @@ const ContentCategory = ({datas, setDataItem, setDataItemBeforeConfirm, setConfi
                                         <td className="px-6 py-5 font-bold text-on-surface">{item?.name}</td>
                                         <td className="px-6 py-5 font-bold text-on-surface">{item?.age_permit}</td>
                                         <td className="px-6 py-5 text-right">
-                                            <div className="flex justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex justify-start gap-2">
                                                 <button 
                                                     className="p-2 hover:bg-surface-container rounded-lg text-secondary"
                                                     onClick={()=>setDataItem(item)}>

@@ -83,6 +83,11 @@ const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoin
         
     },[showtimeChose])
 
+    useEffect(()=>{
+        if(chairChosen.length == 0)
+            setUserEarnPoint(null)
+    },[chairChosen])
+
     const dataRender = useMemo(()=>{
         return datas.filter( (item) => {
             let passCate = cateChose == 'all' || item.Categories.some( item => item.id == cateChose)
@@ -106,7 +111,7 @@ const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoin
     }
     
     return <>
-        <main className="flex overflow-hidden h-[calc(100vh-64px)]">
+        <main className="flex w-[100%] overflow-hidden h-[calc(100vh-64px)]">
             <section className="w-1/3 min-w-[360px] w-[400px] border-r border-outline-variant/30 flex flex-col bg-surface-container-lowest">
                 <div className="p-6 border-b border-outline-variant/30 bg-surface-bright">
                     <h3 className="font-headline-md text-on-surface mb-4">Phim đang chiếu</h3>
@@ -164,7 +169,7 @@ const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoin
                 </div>
             </section>
 
-            {(showtimeChose)&& <section className="flex-1 flex flex-col p-6 bg-surface overflow-x-auto scrollbar-hide">
+            {(showtimeChose)&& <section className="flex-1 flex flex-col p-6 bg-surface overflow-x-scroll scrollbar-hide">
                 <div className="flex justify-between items-start mb-10">
                     <div>
                         <h3 className="font-headline-md text-on-surface">Chọn chỗ ngồi</h3>
@@ -185,14 +190,14 @@ const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoin
                 </div>
                 <hr/>
 
-                <div className="flex flex-col items-center mt-6 mb-12">
+                <div className="flex-1 flex flex-col items-center mt-6 mb-12">
                     <div className="w-[100%] h-12 screen-curve flex items-center justify-center ">
                         <span className="text-xs font-bold tracking-[0.5em] text-secondary mt-2">MÀN HÌNH</span>
                     </div>
                 </div>
 
                 <div className="seat-grid flex flex-col gap-3 items-center">
-                    <div className="space-y-4" id="grid-container">
+                    <div className="space-y-4 overflow-x-scroll" id="grid-container">
                         
                         <Theater 
                             list={listChair?.list} 
@@ -201,7 +206,7 @@ const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoin
                             setChairChosen={setChairChosen} 
                             showtimeChose={showtimeChose?.showtime}
                             socketId={socketId}
-                            setUserEarnPoint={setUserEarnPoint}/>
+                            />
 
                     </div>
                 </div>
@@ -226,7 +231,7 @@ const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoin
                 </div>
             </section>}
             
-            {(showtimeChose)&& <aside className="w-80 bg-surface-container-low border-l border-outline-variant/30 flex flex-col wrap">
+            {(showtimeChose)&& <aside className="bg-surface-container-low border-l border-outline-variant/30 flex flex-col wrap">
                 <div className="p-6 bg-white border-b border-outline-variant/30">
                     <h3 className="font-label-bold text-on-surface-variant uppercase tracking-widest text-[11px] mb-4">Chi tiết hóa đơn</h3>
                     <div className="space-y-4">
@@ -315,7 +320,7 @@ const ContentTicket = ({datas, categories, earnPoint, setEarnPoint, userEarnPoin
     </>
 }   
 
-const Theater = ({list, count, chairChosen, setChairChosen, showtimeChose, socketId, setUserEarnPoint}) => {
+const Theater = ({list, count, chairChosen, setChairChosen, showtimeChose, socketId}) => {
     if(!list || !count) return 
     let length = calculatorNumberOfRow(list, count)
     let objRender = []
@@ -346,14 +351,13 @@ const Theater = ({list, count, chairChosen, setChairChosen, showtimeChose, socke
                     setChairChosen={setChairChosen} 
                     showtimeChose={showtimeChose} 
                     socketId={socketId}
-                    setUserEarnPoint={setUserEarnPoint}
                     />)
         }
     </>
 }
 
 // Tạo mỗi hàng ghế 
-const RowTheater = ({list, chairChosen, setChairChosen, showtimeChose, socketId, setUserEarnPoint}) => {
+const RowTheater = ({list, chairChosen, setChairChosen, showtimeChose, socketId}) => {
     let typeCssColorChair = {
         Standard: 'standard',
         VIP: 'vip',
@@ -391,8 +395,6 @@ const RowTheater = ({list, chairChosen, setChairChosen, showtimeChose, socketId,
                 if(containSeatId)
                     setChairChosen(pre => {
                         let newState = pre.filter(item => item.seat_number != seatId)
-                        if(newState.length == 0)
-                            setUserEarnPoint(null)
                         return newState
                     })
                 else

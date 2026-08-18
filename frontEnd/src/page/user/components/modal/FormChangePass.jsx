@@ -13,12 +13,48 @@ const FormChangeChangePass = ({dataItem, setDataItem}) => {
         oldPass: ""
     })
     const [authenError, setAuthenError] = useState({
-        newPass_0: "",
-        oldPass_0: ""
+        newPass_0: "err",
+        oldPass_0: "err"
     })
 
     const handleInputChange = (e) => {
-        handleInputOnChange(e,setAuthen, setAuthenError, setNotPassValid, "formChangePass")
+        handleInputOnChange(e,setAuthen, setAuthenError, setNotPassValid, "formChangePass") 
+        let {id, value} = e.target
+        if((id == 'newPass' && value == authen.oldPass) || (id == 'oldPass' && value == authen.newPass)){
+            setAuthenError(pre => {
+                const nextErrors = {
+                    ...pre,
+                    'newPass_0': 'Mật khẩu mới không được trùng mật khẩu cũ'
+                  }
+                const isValid = Object.values(nextErrors).every(err => String(err || "").trim() === "")
+                setNotPassValid(!isValid)
+                return nextErrors
+            })
+        }
+        else if(!value.includes(" ") && value.length > 7){
+            if(id == 'newPass' && authen.oldPass.length > 7 && !authen.oldPass.includes(" ")){
+                setAuthenError(pre => {
+                    const nextErrors = {
+                        ...pre,
+                        'newPass_0': ''
+                      }
+                    const isValid = Object.values(nextErrors).every(err => String(err || "").trim() === "")
+                    setNotPassValid(!isValid)
+                    return nextErrors
+                })
+            }
+            else if(id == 'oldPass' && authen.newPass.length > 7 && !authen.newPass.includes(" ")){
+                setAuthenError(pre => {
+                    const nextErrors = {
+                        ...pre,
+                        'newPass_0': ''
+                      }
+                    const isValid = Object.values(nextErrors).every(err => String(err || "").trim() === "")
+                    setNotPassValid(!isValid)
+                    return nextErrors
+                })
+            }
+        }
     }
 
     const handleChangePassword = async (e) => {
@@ -27,12 +63,25 @@ const FormChangeChangePass = ({dataItem, setDataItem}) => {
             old_pass: authen.oldPass,
             new_pass: authen.newPass
         }
+        if(dataForApi.old_pass == dataForApi.new_pass){
+            toast.error("Mật khẩu mới không được trùng mật khẩu cũ")
+            return
+        }
         showLoading("Đang xử lý dữ liệu, vui lòng chờ !")
         try{
             const res = await customeFetch(apiUserService.baseURL+'/users/change-password','authen','POST',JSON.stringify(dataForApi))
             const data = await res.json()
-            if(res.ok)
+            if(res.ok){
                 toast.success(data.message)
+                setAuthen({
+                    newPass: "",
+                    oldPass: ""
+                })
+                setAuthenError({
+                    newPass_0: "err",
+                    oldPass_0: "err"
+                })
+            }
             else
                 toast.error(data.message)
             setDataItem(null)
@@ -104,7 +153,7 @@ const FormChangeChangePass = ({dataItem, setDataItem}) => {
                     </button>
                     <button 
                         className={`px-10 py-3 rounded-lg bg-primary-container text-on-primary font-label-bold shadow-lg shadow-primary-container/30  flex items-center gap-2
-                            ${notPassValid ? 'hover:bg-primary transition-all cursor-not-allowed' : 'cursor-pointer active:scale-95'}`} 
+                            ${notPassValid ? 'cursor-not-allowed opacity-60' : 'hover:bg-primary transition-all cursor-pointer active:scale-95'}`} 
                         type="submit"
                         disabled={notPassValid}>
                         <span className="material-symbols-outlined text-lg">

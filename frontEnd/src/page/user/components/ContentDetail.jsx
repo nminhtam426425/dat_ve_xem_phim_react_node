@@ -1,4 +1,4 @@
-import { ArrowRight, Calendar, Clock, MapPin, PlayCircle, Star } from "lucide-react"
+import { ArrowRight, Calendar, Clock, MapPin, PlayCircle } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { formatDate } from "../../validate"
 import { useNavigate, Link } from "react-router-dom"
@@ -16,7 +16,7 @@ const checkDateRelease = (date) => {
 
 const formatShowtimeInfo = (showtime) => {
     if(!showtime) return ""
-    return `${showtime.start_time.substr(11, 5)} - ${showtime.price/1000}K` 
+    return `${showtime.start_time.substr(11, 5)} - ${showtime.end_time.substr(11, 5)} : ${showtime.price/1000}K` 
 }
 const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOfMovie}) => {
     const navigate = useNavigate()
@@ -61,6 +61,11 @@ const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOf
         }
     }
 
+    const convertDuration = (duration) => {
+        if(!duration) return ""
+        return `${Math.floor(duration/60)} giờ ${duration%60} phút`
+    }
+
     return <main className="bg-background2">
          <div className="max-w-[1280px] mx-auto px-4 md:px-12 py-12">
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-12 items-start">
@@ -75,15 +80,13 @@ const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOf
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
                             <span className="bg-primary-container text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase">Đang chiếu</span>
-                            <span className="flex items-center gap-1 text-primary font-bold"><span className="material-symbols-outlined text-sm">
-                                <Star size={20}/>
-                            </span> {movie?.score || 10.0}/10.0</span>
+                           
                         </div>
                         <h1 className="font-headline-xl text-headline-lg text-white">{movie?.title}</h1>
                         <div className="flex flex-wrap gap-4 text-zinc-400 font-body-md">
                             <span className="flex items-center gap-2 text-white font-medium uppercase"><span className="text-white font-medium uppercase">
                                 <Clock size={20}/>
-                            </span>Thời lượng: {movie?.duration}'</span>
+                            </span>Thời lượng: {convertDuration(movie?.duration)}</span>
                             <span className="flex items-center gap-2 text-white font-medium uppercase"><span className="text-white font-medium uppercase">
                                 <Calendar size={20}/></span>{checkDateRelease(movie?.release_date)}</span>
                         </div>
@@ -93,7 +96,7 @@ const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOf
                         <h3 className="text-white font-medium uppercase"> Nội dung phim</h3>
                         <textarea 
                             className="w-full font-body-md text-zinc-300 leading-relaxed max-w-none border rounded-lg p-2" 
-                            rows="6"
+                            rows={6}
                             value={movie?.description || '1 bộ phim dựa trên câu chuyện không có thật về 1 loài có thật....'}
                             readOnly>
                         </textarea>
@@ -147,7 +150,7 @@ const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOf
                         <span className="text-white">Không có suất chiếu ngày {formatDate(dateChosen)}</span>
                         :
                         showtimeOfMovie?.map(item => 
-                            <div className="glass-panel-2 p-6 rounded-2xl flex flex-col md:flex-row gap-8 items-start md:items-center border hover:border-primary">
+                            <div className="glass-panel-2 p-6 rounded-2xl flex flex-col md:flex-row gap-8 items-start md:items-center border border-primary">
                                  <div className="min-w-[240px] space-y-1">
                                     <h4 className="text-white font-headline-md">{item?.name}</h4>
                                     <p className="text-zinc-500 font-label-sm flex items-center gap-1">
@@ -165,7 +168,7 @@ const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOf
                                         item?.Showtimes?.map(item => 
                                             <button 
                                                 key={item.id}
-                                                className="px-6 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-primary hover:text-primary transition-all font-medium"
+                                                className="px-6 py-3 rounded-lg bg-zinc-900 border border-zinc-100 text-zinc-300 hover:border-primary hover:text-primary transition-all font-medium"
                                                 onClick={()=>goToTicket(item, movie)}>
                                                     {formatShowtimeInfo(item)}
                                             </button>

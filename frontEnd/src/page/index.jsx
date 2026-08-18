@@ -1,5 +1,8 @@
 import { createBrowserRouter, ScrollRestoration } from 'react-router-dom'
-import {Home, Login, Register, ListShowtime, DetailMovie, ProfileUser, TicketChoice, HistoryUser, VoucherUser, ListVoucherExchange,AboutUs} from './user/index.jsx'
+import {
+  Home, Login, Register, ListShowtime, DetailMovie, ProfileUser, TicketChoice, 
+  HistoryUser, VoucherUser, ListVoucherExchange,AboutUs, VNPayReturn, ConfirmCode, ConfirmPass, DetailComing
+} from './user/index.jsx'
 import {
   LoginAdmin, 
   MovieManager,
@@ -65,9 +68,30 @@ const router = createBrowserRouter([
       </>
     },
     {
+      path: '/chi-tiet-sap-chieu',
+      element: <>
+        <DetailComing/>
+        <ScrollRestoration />
+      </>
+    },
+    {
       path: '/doi-thuong',
       element: <>
         <ListVoucherExchange/>
+        <ScrollRestoration />
+      </>
+    },
+    {
+      path: '/xac-nhan',
+      element: <>
+        <ConfirmCode/>
+        <ScrollRestoration />
+      </>
+    },
+    {
+      path: '/doi-mat-khau',
+      element: <>
+        <ConfirmPass/>
         <ScrollRestoration />
       </>
     },
@@ -85,6 +109,10 @@ const router = createBrowserRouter([
         {
           path: '/user/my-voucher',
           element: <VoucherUser/> ,
+        },
+        {
+          path: '/vnpay-return',
+          element: <VNPayReturn/> ,
         }
       ]
     },

@@ -3,6 +3,7 @@ import {Header, ContentProfileUser, Footer} from "./components/index"
 import Modal from "../admin/components/modal/Modal"
 import ConfirmAvatar from "./components/modal/ConfirmAvatar"
 import FormChangeChangePass from "./components/modal/FormChangePass"
+import ChatWidget from "./components/modal/ChatWidget"
 import { useLoading } from "../../LoadingContext"
 
 const  ProfileUser = () => {
@@ -44,6 +45,7 @@ const  ProfileUser = () => {
         <Modal dataItem={dataItem} setDataItem={setDataItem} styleModal="updateInfo" setForUserUpdate={setUserInfo}/>
         <ConfirmAvatar {...propsOfConfirm}/>
         <FormChangeChangePass dataItem={showFormChangePass} setDataItem={setShowFormChangePass}/>
+        <ChatWidget/>
         <Footer/>
     </>
 }

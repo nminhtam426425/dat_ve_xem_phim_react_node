@@ -1,14 +1,16 @@
-import { use, useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { formatDate2 } from "../../../validate"
 import { customeFetch, apiUserService, getAccessToken } from "../../../config"
+import { toast } from "sonner"
 
 
 
-const Voucher = ({showVoucher, setShowVoucher, priceBooking, setPriceBooking, useVoucher, setUseVoucher}) => {
+const Voucher = ({showVoucher, setShowVoucher, priceBooking, priceAfterDiscount, setPriceBooking, useVoucher, setUseVoucher}) => {
     const [vouchers, setVouchers] = useState([])
     // dùng để sử dụng voucher cá nhân (cho phép sử dụng tối đa 2 voucher - 1 của hệ thống 1 - của ngươi tích điểm
     const [myVoucher, setMyVoucher] = useState([])
     const [showMyVoucher, setShowMyVoucher] = useState(false)
+    const containerRef = useRef(null)
 
     useEffect(()=>{
         const getDatas = async () => {
@@ -34,7 +36,7 @@ const Voucher = ({showVoucher, setShowVoucher, priceBooking, setPriceBooking, us
                         item.type = 'private'
                         return item
                     })
-                    setMyVoucher(data)
+                    setMyVoucher(data.filter(item => item.Users[0].VoucherOfUser.is_use == false))
                 }
             }
             catch(err){
@@ -79,12 +81,26 @@ const Voucher = ({showVoucher, setShowVoucher, priceBooking, setPriceBooking, us
     }
 
     const handleUseVoucher = (voucher) => {
+        if(priceBooking < voucher.min_order_value){
+            toast.error(`Đơn hàng chưa đạt giá trị tối thiểu ${voucher.min_order_value/1000}K để sử dụng voucher này !`)
+            return
+        }
         let newArr = checkUse(useVoucher, voucher)
         let discount = calTotalPrice(newArr)
+        let tempDiscount = priceBooking - discount < 0 ? 0 : priceBooking - discount
 
         setUseVoucher(newArr)
-        setPriceBooking(priceBooking - discount)
+        setPriceBooking(tempDiscount)
         setShowVoucher(false)
+        containerRef.current.scrollTop = 0
+    }
+
+    const cancelVoucher = (voucher) => {
+        let discount = getValueDiscount(voucher)
+        setUseVoucher(pre => [...pre.filter(item => item.id != voucher.id)])
+        setPriceBooking(priceAfterDiscount + discount)
+        setShowVoucher(false)
+        containerRef.current.scrollTop = 0
     }
 
     return <div className="modal" style={{display: showVoucher ? 'flex' : 'none'}}>
@@ -115,20 +131,35 @@ const Voucher = ({showVoucher, setShowVoucher, priceBooking, setPriceBooking, us
             {
                 showMyVoucher
                 ?
-                    <RenderListVoucher type="private" data={myVoucher} handleUseVoucher={handleUseVoucher} priceBooking={priceBooking}/>
+                    <RenderListVoucher 
+                    type="private" 
+                    data={myVoucher} 
+                    handleUseVoucher={handleUseVoucher} 
+                    priceBooking={priceBooking} 
+                    useVoucher={useVoucher}
+                    cancelVoucher={cancelVoucher}
+                    containerRef={containerRef}/>
                 :
-                    <RenderListVoucher type="public" data={vouchers}  handleUseVoucher={handleUseVoucher} priceBooking={priceBooking}/>
+                    <RenderListVoucher 
+                    type="public" 
+                    data={vouchers}  
+                    handleUseVoucher={handleUseVoucher} 
+                    priceBooking={priceBooking} 
+                    useVoucher={useVoucher}
+                    cancelVoucher={cancelVoucher}
+                    containerRef={containerRef}/>
             }
         </div>
     </div>
 }
 
-const RenderListVoucher = ({data, handleUseVoucher, priceBooking}) => {
+const RenderListVoucher = ({data, handleUseVoucher, priceBooking, useVoucher, cancelVoucher, containerRef}) => {
     const handleOnCanUse = (price, voucher) => {
-        if(!price || !voucher) return false
-        if(price >= voucher.min_order_value)
-            return true
-        return false
+        return true
+        // if(!price || !voucher) return false
+        // if(price >= voucher.min_order_value)
+        //     return true
+        // return false
     }
     
     return <>
@@ -138,6 +169,7 @@ const RenderListVoucher = ({data, handleUseVoucher, priceBooking}) => {
                 ?
                 data?.map( item => <>
                     <div 
+                        ref={containerRef}
                         key={item.code}
                         className={`group bg-zinc-900 border border-zinc-800/50 rounded-xl overflow-hidden shadow-2xl transition-transform active:scale-95 duration-200
                             ${handleOnCanUse(priceBooking,item) ? '' : 'opacity-70'}`}
@@ -154,13 +186,33 @@ const RenderListVoucher = ({data, handleUseVoucher, priceBooking}) => {
                             <h3 className="text-xl font-bold text-white mb-2">Giảm {item.discount_type == 'fixed_amount' ? `${item.discount/1000}K` : item.discount+'%'}</h3>
                             <p className="text-zinc-400 text-sm mb-4 line-clamp-2">Cho đơn hàng tối thiếu: {`${item.min_order_value/1000}K`}.</p>
 
-                            {item.max_discount_value&&<p className="text-zinc-400 text-sm mb-4 line-clamp-2">Giảm tối đa: {`${item.max_discount_value/1000}K`}.</p>}
+                            {item.max_discount_value&&<p className="text-white font-bold mb-4 line-clamp-4">Giảm tối đa: {`${item.max_discount_value/1000}K`}.</p>}
 
                             <div className="flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Hết hạn</span>
-                                    <span className="text-sm font-semibold text-zinc-300">{formatDate2(item.expiry_date)}</span>
-                                </div>
+                                {
+                                    item.type == 'public'
+                                    ?
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Hết hạn</span>
+                                        <span className="text-sm font-semibold text-zinc-300">{formatDate2(item.expiry_date)}</span>
+                                    </div>
+                                    :
+                                    <div className="flex flex-col"></div>
+                                }
+                                
+                                <div className="flex gap-2">
+                                    {
+                                        useVoucher.some(usedVoucher => usedVoucher.id == item.id)
+                                        &&
+                                        <button
+                                            onClick={()=>cancelVoucher(item)} 
+                                            className={`bg-white text-primary font-bold py-2 px-6 rounded-lg text-sm transition-colors shadow-lg shadow-red-900/20
+                                            `}
+                                            >
+                                            Hủy chọn
+                                        </button> 
+                                    }
+                                    
                                     <button
                                         onClick={()=>handleUseVoucher(item)} 
                                         disabled={!handleOnCanUse(priceBooking,item)}
@@ -168,6 +220,7 @@ const RenderListVoucher = ({data, handleUseVoucher, priceBooking}) => {
                                         ${handleOnCanUse(priceBooking,item) ? '' : 'cursor-not-allowed'}`}>
                                         Dùng ngay
                                     </button>
+                                </div>
                             </div>
                         </div>
                     </div>

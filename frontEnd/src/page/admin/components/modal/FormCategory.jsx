@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import {AwardIcon, Save} from "lucide-react"
+import {Save} from "lucide-react"
 import { toast } from "sonner"
 import { customeFetch, apiUserService, handleInputOnChange, handleAddData, handleUpdateData } from "../../../config"
 
@@ -13,7 +13,7 @@ const FormCategory = ({dataItem, setDataItem, setDatas}) => {
 
     const [categoryErr, setCategoryErr] = useState({
         name_0: "err",
-        age_permit_0: "err"
+        age_permit_0: ""
     })
 
     useEffect(()=>{
@@ -22,11 +22,19 @@ const FormCategory = ({dataItem, setDataItem, setDatas}) => {
                 name: dataItem?.name,
                 age_permit: dataItem?.age_permit
             })
+            setCategoryErr({
+                name_0: "",
+                age_permit_0: ""
+            })
         }
         else{
             setCategory({
                 name: "",
                 age_permit: 16
+            })
+            setCategoryErr({
+                name_0: "",
+                age_permit_0: ""
             })
         }
     },[dataItem])
@@ -72,6 +80,10 @@ const FormCategory = ({dataItem, setDataItem, setDatas}) => {
                     toast.success("Thêm thành công !")
                 }
             }
+            else{
+                const data = await res.json()
+                toast.success(data.message)
+            }
         }
         catch(err){
             toast.error("Thao tác thất bại !")
@@ -109,6 +121,7 @@ const FormCategory = ({dataItem, setDataItem, setDatas}) => {
                     onChange={handleInputChange}
                     type="number"
                     min={5}
+                    max={18}
                     required/>
             </div>
 

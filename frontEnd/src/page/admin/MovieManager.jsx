@@ -2,7 +2,7 @@ import Aside from './components/Aside'
 import ContentMovieManager from './components/ContentMovieManager'
 import Header from './components/Header'
 import Modal from './components/modal/Modal'
-import ConfirmBox from './components/modal/ConfirmBox'
+import ConfirmLockMovie from './components/modal/ConfirmLockMovie'
 import { useEffect, useState } from 'react'
 import {customeFetch, apiUserService} from '../config.js'
 
@@ -43,11 +43,13 @@ const MovieManager = () => {
         }
         getDatas()
     },[])
+    
     const [dataMovie, setDataMovie] = useState(null)
     const [dataItemBeforeConfirm, setDataItemBeforeConfirm] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
-    const [confirm, setConfirm] = useState(null)
+    const [confirm, setConfirm] = useState(false)
     const [showFormTrending, setShowFormTrending] = useState(null)
+    const [typeLockOrUnlock, setTypeLockOrUnlock] = useState('')
     const itemsPerPage = 5
 
     let propsOfContentMovie = {
@@ -57,17 +59,19 @@ const MovieManager = () => {
         categories,
         dataItemBeforeConfirm,
         movieTrending,
+        setDatas,
         setConfirm,
         setDataItem: setDataMovie,
         setCurrentPage,
         setDataItemBeforeConfirm,
-        setShowFormTrending
+        setShowFormTrending,
+        setTypeLockOrUnlock
     }
 
     let propsOfConfirm = {
         confirm,
         dataItemBeforeConfirm,
-        type: 'movies',
+        type: typeLockOrUnlock,
         setDatas,
         setConfirm,
         setDataItemBeforeConfirm
@@ -80,7 +84,7 @@ const MovieManager = () => {
             <ContentMovieManager {...propsOfContentMovie} />
         </main>
         <Modal styleModal="movie" dataItem={dataMovie} setDataItem={setDataMovie} datas={datas} setDatas={setDatas} categories={categories}/>
-        <ConfirmBox {...propsOfConfirm}/>
+        <ConfirmLockMovie {...propsOfConfirm}/>
         <Modal styleModal="trending" dataItem={showFormTrending} setDataItem={setShowFormTrending} setMovieTrending={setMovieTrending}/>
     </div>
 }

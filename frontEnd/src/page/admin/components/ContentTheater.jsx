@@ -69,12 +69,6 @@ const ContentTheater = ({setDataItem,theaterOnBranch, setDataItemBeforeConfirm, 
                                 </div>
                             </div>
                         </div>
-                        {/* <div className="flex items-center">
-                            <button 
-                                className="px-6 py-3 border border-outline rounded-xl font-bold text-primary bg-surface hover:bg-surface-container-high transition-all"
-                                >Sửa cấu hình
-                            </button>
-                        </div> */}
                     </div>
                     :
                     <div className="flex justify-between items-center mt-6 mb-8">
@@ -238,6 +232,7 @@ const RowTheater = ({list}) => {
 const calculatorNumberOfRow = (listChair, count) => {
     let reulst = 0
     let length = listChair?.length || 0
+    console.log(listChair[0])
     for(let i = 0; i <  length;){
         reulst++
         if(listChair[i].type == 'Sweetbox')

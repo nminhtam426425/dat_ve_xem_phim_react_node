@@ -3,7 +3,7 @@ import Header from './components/Header'
 import ContentAdminBranch from './components/ContentAdminBranch'
 import { useEffect, useState } from 'react'
 import { apiUserService, customeFetch } from '../config'
-import { formatDate2 } from '../validate'
+import { formatDate2,formatDateHour } from '../validate'
 
 const Home = () => {
     const [dayMark, setDayMark] = useState(new Date())
@@ -11,6 +11,7 @@ const Home = () => {
     const [typeMark, setTypeMark] = useState('weeks')
     const [weekMark ,setWeekMark] = useState(null)
     const [datas, setDatas] = useState(null)
+    const [percentUpRevenue, setPercentUpRevenue] = useState(0)
 
     useEffect(()=>{
         const getDatas = async () => {
@@ -18,11 +19,14 @@ const Home = () => {
             try{
                 let dataForApi = {
                     startMark: formatDate2(weekMark.start),
-                    endMark: formatDate2(weekMark.end)
+                    endMark: formatDateHour(weekMark.end)
                 }
                 const res = await customeFetch(apiUserService.baseURL+'/bookings/revenue-weeks','authen','POST',JSON.stringify(dataForApi))
                 if(res.ok){
                     const data = await res.json()
+                    let totalWeek = data.dataRevenue.reduce((pre, cur)=>pre+=cur,0)
+                    let percent = data.totalRevueWeekbefore == 0 ? 100 : ((totalWeek - data.totalRevueWeekbefore)/data.totalRevueWeekbefore)*100
+                    setPercentUpRevenue(percent.toFixed(0))
                     setDatas(data)
                 }
             }
@@ -40,7 +44,8 @@ const Home = () => {
         typeMark,
         setTypeMark,
         weekMark,
-        setWeekMark
+        setWeekMark,
+        percentUpRevenue
     }
 
     return <div className="bg-background text-on-background min-h-screen flex">

@@ -12,7 +12,7 @@ const ContetnAboutUs = ({datas}) => {
                         <div className="space-y-6 text-on-surface-variant text-body-lg leading-relaxed">
                             <p> <span className="underline">Tên cơ sở:</span> {datas?.name}</p>
                             <p><span className="underline">Địa chỉ:</span> {datas?.address}</p>
-                            <p><span className="underline">Thông tin liện lạc:</span> Liên hệ trưc tiếp tại quầy</p>
+                            <p><span className="underline">Thông tin liện lạc:</span> Liên hệ trưc tiếp tại quầy hoặc thông qua tính năng trò chuyện ở trang cá nhân.</p>
                         </div>
                     </div>
 

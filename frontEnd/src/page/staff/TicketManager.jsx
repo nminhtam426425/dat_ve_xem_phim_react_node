@@ -3,6 +3,7 @@ import ContentTicket from './components/ContentTicket'
 import Header from './components/Header'
 import AsideMobile from './components/AsideMobile'
 import EarnPoint from './components/modal/EarnPoint'
+import FormAddCustomer from './components/modal/FormAddCustomer'
 import { useEffect, useState } from 'react'
 import { customeFetch,apiUserService } from '../config'
 
@@ -12,6 +13,7 @@ const TicketManager = () => {
     const [userEarnPoint, setUserEarnPoint] = useState(null)
     const [earnPoint, setEarnPoint] = useState(false)
     const [showAside, setShowAside] = useState(false)
+    const [newCustomer, setNewCustomer] = useState(null)
 
     useEffect(()=>{
         const getDatas = async () => {
@@ -56,7 +58,8 @@ const TicketManager = () => {
             <Header setShowAside={setShowAside}/>
             <ContentTicket {...propsOfContent}/>
         </main>
-        <EarnPoint confirm={earnPoint} setConfirm={setEarnPoint} setUserEarnPoint={setUserEarnPoint}/>
+        <EarnPoint confirm={earnPoint} setConfirm={setEarnPoint} setUserEarnPoint={setUserEarnPoint} setNewCustomer={setNewCustomer}/>
+        <FormAddCustomer dataItem={newCustomer} setDateItem={setNewCustomer} setUserEarnPoint={setUserEarnPoint} setConfirm={setEarnPoint}/>
     </div>
 }
 

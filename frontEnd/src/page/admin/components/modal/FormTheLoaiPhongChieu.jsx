@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import {AwardIcon, Save} from "lucide-react"
+import {Save} from "lucide-react"
 import { toast } from "sonner"
 import { customeFetch, apiUserService, handleInputOnChange, handleAddData, handleUpdateData } from "../../../config"
 
@@ -13,7 +13,7 @@ const FormTypeTheater = ({dataItem, setDataItem, setDatas}) => {
 
     const [typeTheaterErr, setTypeTheaterErr] = useState({
         type_name_0: "err",
-        description_0: "err"
+        description_0: ""
     })
 
     useEffect(()=>{
@@ -21,6 +21,10 @@ const FormTypeTheater = ({dataItem, setDataItem, setDatas}) => {
             setTypeTheater({
                 type_name: dataItem?.type_name,
                 description: dataItem?.description
+            })
+            setTypeTheaterErr({
+                 type_name_0: "",
+                description_0: ""
             })
         }
         else{
@@ -32,7 +36,7 @@ const FormTypeTheater = ({dataItem, setDataItem, setDatas}) => {
     },[dataItem])
 
     const handleInputChange = (e) => {
-        handleInputOnChange(e, setTypeTheater, null, null, "")
+        handleInputOnChange(e, setTypeTheater, setTypeTheaterErr, setNotPassValid, "typeRoom")
     }
 
     const closeModal = () => {

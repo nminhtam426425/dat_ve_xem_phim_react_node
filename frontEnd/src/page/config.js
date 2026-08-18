@@ -65,7 +65,7 @@ const customeFetch = async (url, type, method, body={}) => {
           }
       }
   } catch (err) {
-      console.error("Fetch error:", err)
+      console.error("Fetch error:")
   }
   return res
 }
@@ -123,7 +123,7 @@ const handleSilentRefresh = async () => {
       return data.token
     }
   } catch (error) {
-    console.error("Không thể tự động refresh token:", error)
+    console.error("Không thể tự động refresh token:")
   }
   return null
 }
@@ -185,7 +185,6 @@ const handleUpdateData = (setDatas, key, keyValue, data) => {
 // key: khóa chính dùng để tìm đối tượng (yêu cầu: trùng với key của data)
 // keyValue: giá trị khóa cần tìm để xóa
 const handleDeleteData = (setDatas, key, keyValue) => {
-  console.log(key, keyValue)
   setDatas(pre => pre.filter( item => item[key] !== keyValue))
 }
 

@@ -1,6 +1,11 @@
 import {FileExclamationPoint} from "lucide-react"
 
-const FormCheckTicket = ({dataItem, setDataItem}) => {
+const FormCheckTicket = ({dataItem, setDataItem, setForUserUpdate}) => {
+    // setForUserUpdate: ở đây để tận dụng props mà không cần thêm mmới để set lại resultScan
+    const close = () => {
+        setForUserUpdate("")
+        setDataItem(null)
+    }
     return <>
         {
             dataItem && dataItem?.type == 'success'
@@ -10,7 +15,7 @@ const FormCheckTicket = ({dataItem, setDataItem}) => {
                     <div className="flex items-center gap-3 mb-2">
                         <span className="bg-green-100 text-green-700 px-12 py-4 rounded-full text-xs font-bold uppercase tracking-wider mx-auto">#Vé hợp lệ</span>
                     </div>
-                    <h3 className="font-headline-lg text-headline-md text-on-surface mb-2 text-center">Hành Tinh Cát: Phần Hai</h3>
+                    <h3 className="font-headline-lg text-headline-md text-on-surface mb-2 text-center">Phim: {dataItem?.data?.title}</h3>
 
                     <div className="grid grid-cols-2 gap-y-4 gap-x-8 mt-4">
                         <div>
@@ -33,7 +38,7 @@ const FormCheckTicket = ({dataItem, setDataItem}) => {
 
                     <button 
                         className="w-full py-4 mt-8 bg-primary-container text-on-primary rounded-xl font-bold shadow-lg shadow-primary-container/20 hover:translate-y-[-2px] transition-all"
-                        onClick={() => {setDataItem(null)}}>
+                        onClick={close}>
                         Hoàn tất
                     </button>
                 </div>
@@ -58,7 +63,7 @@ const FormCheckTicket = ({dataItem, setDataItem}) => {
                         </div>
                     <button 
                         className="w-full py-4 mt-8 bg-primary-container text-on-primary rounded-xl font-bold shadow-lg shadow-primary-container/20 hover:translate-y-[-2px] transition-all"
-                        onClick={() => {setDataItem(null)}}>
+                        onClick={close}>
                         Hoàn tất
                     </button>
                 </div>

@@ -36,7 +36,8 @@ const Ticket = () => {
             <Header setShowAside={setShowAside}/>
             <ContentQrCode setResultScan={setResultScan}/>
         </main>
-        <Modal styleModal="checkTicket" dataItem={dataMovie} setDataItem={setDataMovie}/>
+        {/* ở đây dùng setForUserUpdate để tận dụng props, để không thêm mới props để set lại resultScan */}
+        <Modal styleModal="checkTicket" dataItem={dataMovie} setDataItem={setDataMovie} setForUserUpdate={setResultScan}/>
     </div>
 }
 

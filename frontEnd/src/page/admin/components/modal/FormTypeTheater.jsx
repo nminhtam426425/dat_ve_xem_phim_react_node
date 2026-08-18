@@ -35,6 +35,7 @@ function getName(countStandard, countVIP, countSweetbox) {
 const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
     const {showLoading, hideLoading} = useLoading()
     const [isActivate, setIsActivate] = useState(false)
+    const [notPassValid, setNotPassValid] = useState(false)
     const [descTheater, setDescTheater] = useState("")
     const [idType, setIdType] = useState("0")
     const [typeTheater, setTypeTheater] = useState([])
@@ -44,6 +45,10 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
         countStandard : 1,
         countVIP: 1,
         countSweetbox: 1
+    })
+    const [theaterError, setTheaterError] = useState({
+        name_0:'err',
+        count_per_row_0:""
     })
 
     useEffect(()=>{
@@ -66,10 +71,14 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
         if(dataItem?.id){
             setTheater({
                 name: dataItem.name || "",
-                count_per_row: dataItem.count || 2,
+                count_per_row: dataItem.count_per_row || 2,
                 countStandard : dataItem.countStandard || 1,
                 countVIP: dataItem.countVIP || 1,
                 countSweetbox: dataItem.countSweetbox || 1
+            })
+            setTheaterError({
+                name_0:'',
+                count_per_row_0:""
             })
             setIdType(dataItem?.TypeTheater?.id)
             let temp = typeTheater.find(item => item.id == dataItem?.TypeTheater?.id)
@@ -81,10 +90,14 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                 count_per_row:2,
                 countStandard : 1,
                 countVIP: 1,
-                countSweetbox: 1
+                countSweetbox: 1 
             })
-            setIdType("0")
-            setDescTheater("")
+            setTheaterError({
+                name_0:'err',
+                count_per_row_0:""
+            })
+            setIdType(typeTheater[0]?.id)
+            setDescTheater(typeTheater[0]?.description)
         }
     },[dataItem])
 
@@ -94,14 +107,14 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
 
     // xử lý cho các input, dùng chung cho các input có cùng state là movie
     const handleInputChange = (e) => {
-        handleInputOnChange(e, setTheater, null, ()=>{})
+        handleInputOnChange(e, setTheater, setTheaterError, setNotPassValid, 'formTheater')
     }
 
     // xử lý thay đổi kiểu phòng
     const handleTypeTheater = (e) => {
         const {value} = e.target
         setIdType(Number(value))
-        setDescTheater(typeTheater[value]?.description)
+        setDescTheater(typeTheater.find(item => item.id == value)?.description)
     }
 
     const addOrUpdateTheater = async (e) => {
@@ -125,7 +138,7 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                 countSweetbox: theater.countSweetbox,
                 arrName: arrChair,
                 arrType: ['Standard','VIP','Sweetbox'],
-                chairPerLine: theater.count_per_row
+                count_per_row: theater.count_per_row
             }
         }
         else{
@@ -142,7 +155,7 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                 countSweetbox: theater.countSweetbox,
                 arrName: arrChair,
                 arrType: ['Standard','VIP','Sweetbox'],
-                chairPerLine: theater.count_per_row
+                count_per_row: theater.count_per_row
             }
         }
         try{
@@ -155,21 +168,19 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                 dataForApi.TypeTheater.type_name = data.type_name
                 dataForApi.TypeTheater.description = data.description
                 if(dataItem.id){
-                    console.log(dataForApi)
                     toast.success("Cập nhật phòng chiếu thành công !")
-                    handleUpdateData(setDatas,'id',data.id,dataForApi)
+                    handleUpdateData(setDatas,'id',data.id, dataForApi)
                 }
                 else{
                     toast.success("Thêm phòng chiếu thành công !")
                     handleAddData(setDatas, dataForApi)
                 }
-                setDataItem(null)
-                
             }
             else{
                 const data = await res.json()
                 toast.error(data.message)
             }
+            setDataItem(null)
         }
         catch(err){
             console.log(err)
@@ -183,12 +194,13 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
             <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="font-label-bold text-label-bold flex items-center gap-2" htmlFor="name">
-                            <span className="material-symbols-outlined text-sm"></span>
+                        <label className="font-label-bold text-label-bold gap-2" htmlFor="name">
                                 Tên phòng
+                            <p className={`h-4 text-primary ${theaterError.name_0 == 'err' ? 'text-[0px]' : 'text-[9px]'}`} >{theaterError.name_0}</p>
                         </label>
                         <div className="relative">
                             <input 
+                                required
                                 className="w-full px-4 py-3 bg-surface-container-lowest border border-outline rounded-lg focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container outline-none transition-all placeholder:text-outline-variant" 
                                 id="name"  
                                 type="text"
@@ -197,9 +209,9 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                         </div>
                     </div>
                     <div className="space-y-2 relative">
-                        <label className="font-label-bold text-label-bold flex items-center gap-2" htmlFor="name">
-                            <span className="material-symbols-outlined text-sm"></span>
+                        <label className="font-label-bold text-label-bold " htmlFor="name">
                                 Loại phòng chiếu
+                                <p className={`h-4 text-primary ${theaterError.name_0 == 'err' ? 'text-[0px]' : 'text-[9px]'}`} ></p>
                         </label>
                         <select
                             required
@@ -207,7 +219,6 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                             onChange={handleTypeTheater} 
                             className="w-full appearance-none px-4 py-3.5 bg-surface-container-low border border-outline-variant/50 rounded-lg focus:ring-2 focus:ring-primary outline-none text-label-bold cursor-pointer pr-10"
                             >
-                            <option value="0"></option>
                             {
                                 typeTheater.map(item => <option key={item.id} value={item.id} >{item.type_name}</option>)
                             }
@@ -221,8 +232,9 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <label className="font-label-bold text-label-bold flex items-center gap-2" htmlFor="count_per_row">
+                            <label className="font-label-bold text-label-bold" htmlFor="count_per_row">
                                 Số ghế mỗi hàng
+                            <p className={`h-4 text-primary ${theaterError.count_per_row_0 == 'err' ? 'text-[0px]' : 'text-[9px]'}`} >{theaterError.count_per_row_0}</p>
                             </label>
                         </div>
                         <div className="relative">
@@ -232,14 +244,17 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                                 type="number"
                                 value={theater.count_per_row}
                                 onChange={handleInputChange}
-                                min={2} />
+                                required
+                                min={2}
+                                step={2} />
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <label className="font-label-bold text-label-bold flex items-center gap-2" htmlFor="countStandard">
-                                Số hàng ghế thường
+                            <label className="font-label-bold text-label-bold" htmlFor="countStandard">
+                                Số hàng ghế thường                            
+                                <p className={`h-4 text-primary ${theaterError.count_per_row_0 == 'err' ? 'text-[0px]' : 'text-[9px]'}`} ></p>
                             </label>
                         </div>
                         <div className="relative">
@@ -249,7 +264,9 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                                 type="number"
                                 value={theater.countStandard}
                                 onChange={handleInputChange}
-                                min={1} />
+                                required
+                                min={1} 
+                                max={15}/>
                         </div>
                     </div>
                 </div>
@@ -268,7 +285,9 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                                 type="number" 
                                 value={theater.countVIP}
                                 onChange={handleInputChange}
-                                min={1} />
+                                required
+                                min={1}
+                                max={8} />
                         </div>
                     </div>
 
@@ -285,6 +304,8 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                                 value={theater.countSweetbox}
                                 onChange={handleInputChange}
                                 min={1}
+                                max={4}
+                                required
                                 type="number"  />
                         </div>
                     </div>
@@ -317,9 +338,9 @@ const FormTypeTheater = ({setDataItem, dataItem, setDatas}) => {
                     </button>
                     <button 
                         className={`px-10 py-3 rounded-lg bg-primary-container text-on-primary font-label-bold shadow-lg shadow-primary-container/30  flex items-center gap-2
-                            ${isActivate ? 'hover:bg-primary transition-all cursor-not-allowed' : 'cursor-pointer active:scale-95'}`} 
+                            ${isActivate || notPassValid ? 'hover:bg-primary transition-all cursor-not-allowed' : 'cursor-pointer active:scale-95'}`} 
                         type="submit"
-                        disabled={isActivate}>
+                        disabled={isActivate || notPassValid}>
                         <span className="material-symbols-outlined text-lg">
                             <Save size={20}/>
                         </span>

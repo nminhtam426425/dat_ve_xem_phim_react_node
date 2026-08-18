@@ -27,11 +27,6 @@ const Header = ({setShowAside}) => {
         </div>
 
         <div className="flex items-center gap-4">
-            <span className="relative material-symbols-outlined p-2 text-secondary hover:bg-surface-container-high rounded-full transition-all cursor-pointer" data-icon="notifications">
-                <Bell size={20} />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-surface"></span>
-            </span>
-            
             <button 
                 className="flex items-center gap-3 pl-2"
                 onClick={goToProfile}>

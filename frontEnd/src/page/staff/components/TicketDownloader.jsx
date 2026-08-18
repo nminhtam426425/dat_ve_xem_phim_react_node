@@ -4,10 +4,11 @@ import { branch, customeFetch, apiUserService } from '../../config'
 import { formatVND2, calculatorPrice } from '../../validate'
 import { Printer } from 'lucide-react'
 import { toast } from 'sonner'
-
+import {useLoading} from '../../../LoadingContext'
 
 const TicketDownloader = ({ ticketData, chairChosen, nameTheater, setShowtimeChose, setChairChosen, userEarnPoint, setUserEarnPoint }) => {
   const ticketRef = useRef()
+  const {showLoading, hideLoading} = useLoading()
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${ticketData?.bookingId || "not-qr-code"}`
 
@@ -28,7 +29,7 @@ const TicketDownloader = ({ ticketData, chairChosen, nameTheater, setShowtimeCho
         orientation: 'portrait' 
       }
     }
-   
+    showLoading("Vui lòng chờ ...")
     await html2pdf().set(options).from(element).save()
     let dataForApi = {
       showtime_id: ticketData?.showtime?.id,
@@ -40,6 +41,7 @@ const TicketDownloader = ({ ticketData, chairChosen, nameTheater, setShowtimeCho
     setChairChosen([])
     setShowtimeChose(null)
     setUserEarnPoint(null)
+    hideLoading()
   }
 
   const handleUpdateToDB = async (dataForApi) => {

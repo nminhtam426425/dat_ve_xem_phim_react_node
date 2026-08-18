@@ -10,7 +10,10 @@ import HistoryUser from "./HistoryUser.jsx"
 import VoucherUser from "./VoucherUser.jsx"
 import ListVoucherExchange from "./ListVoucherExchange.jsx"
 import AboutUs from "./AboutUs.jsx"
-
+import VNPayReturn from "./VNPayReturn.jsx"
+import ConfirmCode from "./authen/ConfirmCode.jsx"
+import ConfirmPass from "./authen/ConfirmPass.jsx"
+import DetailComing from './DetailComing.jsx'
 export {
     Home,
     Login,
@@ -23,5 +26,9 @@ export {
     HistoryUser,
     VoucherUser,
     ListVoucherExchange,
-    AboutUs
+    AboutUs,
+    VNPayReturn,
+    ConfirmCode,
+    ConfirmPass,
+    DetailComing
 }

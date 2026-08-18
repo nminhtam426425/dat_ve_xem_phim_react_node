@@ -1,9 +1,9 @@
-import {customeFetch, apiUserService,  handleUpdateData} from '../../../config.js'
+import {customeFetch, apiUserService, handleUpdateData} from '../../../config.js'
 import { toast } from 'sonner'
 import { useLoading } from '../../../../LoadingContext.jsx'
 
 
-const ConfirmLockAccount = ({confirm, setConfirm, dataItemBeforeConfirm, setDataItemBeforeConfirm, setDatas, type}) => {
+const ConfirmLockAccount = ({confirm, setConfirm, dataItemBeforeConfirm, setDataItemBeforeConfirm, setDatas, type, dataCal, setDataCal}) => {
     const {showLoading, hideLoading} = useLoading()
     const handleConfirmYes = () => {
         const deleteData = async () => {
@@ -20,6 +20,13 @@ const ConfirmLockAccount = ({confirm, setConfirm, dataItemBeforeConfirm, setData
                     else 
                         dataItemBeforeConfirm.is_activating = 1
                     handleUpdateData(setDatas, 'id', dataForApi.id, dataItemBeforeConfirm)
+                    let count = dataCal.active
+                    count = (type == 'lock') ? --count : ++count 
+                    setDataCal(pre => ({
+                        ...pre,
+                        ['active']: count
+                    }))
+                    setDatas(pre => pre.filter(item => item.id != dataForApi.id))
                 }
             }
             catch(err){

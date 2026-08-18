@@ -4,24 +4,38 @@ import Header from './components/Header'
 import Modal from './components//modal/Modal'
 import ConfirmLockAccount from './components/modal/ConfirmLockAccount'
 import { useEffect, useState } from 'react'
+import { useDebounce } from 'use-debounce'
 import { apiUserService, customeFetch } from '../config'
 
 const MovieManager = () => {
     const [dataAccountNew, setDataAccountNew] = useState(null)
     const [datas, setDatas] = useState([])
+    // tính toán phần trăm
+    const [dataCal, setDataCal] = useState([])
     const itemsPerPage = 5 
     const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
     const [typeLockOrUnlock, setTypeLockOrUnlock] = useState('')
     const [dataItemBeforeConfirm,setDataItemBeforeConfirm] = useState(null)
     
+    const [roleForRender, setRoleForRender] = useState('staff')
+    const [searchKeyword, setSearchKeyword] = useState('')
+    const [isActivate, setIsActivate] = useState(1)
+
+    const [debouncedSearch] = useDebounce(searchKeyword, 500)
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [roleForRender, isActivate, debouncedSearch])
 
     useEffect(()=>{
         const getDatas = async () => {
             try{
-                const res = await customeFetch(apiUserService.baseURL+'/users/all','authen','GET')
+                let query = `page=${currentPage}&limit=${itemsPerPage}&role=${roleForRender}&is_activating=${isActivate}&search=${debouncedSearch}`
+                const res = await customeFetch(apiUserService.baseURL+`/users/all?${query}`,'authen','GET')
                 if(res.ok){
                     const data = await res.json()
-                    setDatas(data)
+                    setDatas(data.data)
+                    setTotalPages(data.pagination.totalPages)
                 }
             }
             catch(err){
@@ -29,6 +43,22 @@ const MovieManager = () => {
             }
         }
         getDatas()
+    },[currentPage, itemsPerPage, roleForRender, isActivate, debouncedSearch])
+
+    useEffect(()=>{
+        const getDataCal = async () => {
+            try{
+                const res = await customeFetch(apiUserService.baseURL+`/users/dataCal`,'authen','GET')
+                if(res.ok){
+                    const data = await res.json()
+                    setDataCal(data)
+                }
+            }
+            catch(err){
+                console.log(err)
+            }
+        }
+        getDataCal()
     },[])
 
     let propsOfContent = {
@@ -36,11 +66,19 @@ const MovieManager = () => {
         dataAccountNew,
         itemsPerPage,
         currentPage,
+        totalPages,
+        roleForRender,
+        searchKeyword,
+        isActivate,
+        dataCal,
         setCurrentPage,
         setDataItem: setDataAccountNew,
         setDatas,
         setConfirm: setTypeLockOrUnlock,
-        setDataItemBeforeConfirm
+        setDataItemBeforeConfirm,
+        setIsActivate,
+        setSearchKeyword,
+        setRoleForRender
 
     }
 
@@ -50,7 +88,9 @@ const MovieManager = () => {
         setDatas,
         type: typeLockOrUnlock,
         dataItemBeforeConfirm,
-        setDataItemBeforeConfirm
+        setDataItemBeforeConfirm,
+        dataCal,
+        setDataCal
     }
 
     return <div className="bg-background text-on-background min-h-screen flex">

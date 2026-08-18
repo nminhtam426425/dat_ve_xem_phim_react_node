@@ -90,7 +90,7 @@ export default function Navbar({searchQuery, setSearchQuery}) {
                   <input
                     id="search-input"
                     type="text"
-                    placeholder="Search movies..."
+                    placeholder="Tìm tên phim, đạo diễn..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-transparent border-none outline-none focus:ring-0 text-sm w-44 placeholder:text-neutral-400 text-inherit"
