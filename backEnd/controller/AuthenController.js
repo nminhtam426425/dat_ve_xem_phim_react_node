@@ -7,7 +7,7 @@ class AuthenController {
             const result = await AuthenService.login(req.body)
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,  // Ngăn JavaScript truy cập
-                secure: false,    // Chỉ gửi qua HTTPS 
+                secure: true,    // Chỉ gửi qua HTTPS 
                 sameSite: 'strict', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
                 maxAge: 24 * 60 * 60 * 1000
             })
@@ -22,7 +22,7 @@ class AuthenController {
             const result = await AuthenService.loginWithGoogle(req.body)
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,  // Ngăn JavaScript truy cập
-                secure: false,    // Chỉ gửi qua HTTPS 
+                secure: true,    // Chỉ gửi qua HTTPS 
                 sameSite: 'strict', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
                 maxAge: 24 * 60 * 60 * 1000
             })
@@ -49,7 +49,7 @@ class AuthenController {
         try {
             res.clearCookie('refreshToken', {
                 httpOnly: true,
-                secure: false,      
+                secure: true,      
                 sameSite: 'strict'
             })
     
