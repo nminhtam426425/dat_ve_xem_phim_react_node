@@ -16,7 +16,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 
 const server = express()
-
+server.set('trust proxy', 1);
 server.use(express.json())
 server.use(
     cors(

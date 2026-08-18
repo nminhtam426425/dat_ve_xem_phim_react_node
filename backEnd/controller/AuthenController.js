@@ -8,7 +8,7 @@ class AuthenController {
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,  // Ngăn JavaScript truy cập
                 secure: true,    // Chỉ gửi qua HTTPS 
-                sameSite: 'strict', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
+                sameSite: 'none', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
                 maxAge: 24 * 60 * 60 * 1000
             })
             res.status(200).json({token: result.token})
@@ -23,7 +23,7 @@ class AuthenController {
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,  // Ngăn JavaScript truy cập
                 secure: true,    // Chỉ gửi qua HTTPS 
-                sameSite: 'strict', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
+                sameSite: 'none', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
                 maxAge: 24 * 60 * 60 * 1000
             })
             res.status(200).json({token: result.token})
@@ -50,7 +50,7 @@ class AuthenController {
             res.clearCookie('refreshToken', {
                 httpOnly: true,
                 secure: true,      
-                sameSite: 'strict'
+                sameSite: 'none'
             })
     
             return res.status(200).json({ message: 'Đăng xuất thành công!' })
