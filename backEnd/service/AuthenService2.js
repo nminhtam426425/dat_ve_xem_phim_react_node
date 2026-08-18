@@ -9,14 +9,14 @@ class AuthenService {
         try{
             const userLogin = await User.findOne({where: {username: username}})
             if(!userLogin)
-                throw new Error("Thông tin tài khoản không chính xác1 !")
+                throw new Error("Thông tin tài khoản không chính xác !")
             if( !userLogin.is_activating)
                 throw new Error("Tài khoản đã bị khóa !")
 
             const isMatch = await bcrypt.compare(password, userLogin.password)
             let isAllowed = type.includes(userLogin.role)
             if(!isMatch || !isAllowed)
-                throw new Error("Thông tin tài khoản không chính xác 2!")
+                throw new Error("Thông tin tài khoản không chính xác !")
             
             const token = this.createToken(userLogin.id, userLogin.role)
             const refreshToken = this.createTokenRefresh(userLogin.id, userLogin.role)

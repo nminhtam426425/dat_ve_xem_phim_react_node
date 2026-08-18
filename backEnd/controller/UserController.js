@@ -5,9 +5,27 @@ class UserController {
         this.userService = userService
     }
 
+    calcPercent = async (req, res) => {
+        try {
+            const result = await this.userService.calcPercent()
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+
+    getAllForStaff = async (req, res) => {
+        try {
+            const result = await this.userService.getAllForStaff()
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+    
     getAll = async (req, res) => {
         try {
-            const result = await this.userService.getAll()
+            const result = await this.userService.getAll(req.query)
             res.status(200).json(result)
         } catch (error) {
             res.status(400).json({ message: error.message })
@@ -16,12 +34,27 @@ class UserController {
 
     create = async (req,res) => {
         try {
-            const result = await this.userService.create(req.body)
+            const {username,password,email,fullname,website,role,token} = req.body
+            // tạo phản hổi giả
+            if(website)
+                return res.status(200).json({ message: "Đăng ký thành công !" })
+            const result = await this.userService.create(username,password,email,fullname,role,token)
             res.status(200).json(result)
         } catch (error) {
             res.status(400).json({ message: error.message })
         }
     }
+
+    createByStaff = async (req,res) => {
+        try {
+            const {username,password,fullname} = req.body
+            const result = await this.userService.createByStaff(username,password,fullname)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+
 
     activateAccount= async (req,res) => {
         try {
@@ -66,7 +99,8 @@ class UserController {
     createStaff = async (req, res) => {
         try {
             const {id} = req.user
-            const result = await this.userService.createStaff(id,req.body)
+            const {username,password,email,fullname} = req.body
+            const result = await this.userService.createStaff(id,fullname,username,password,email)
             res.status(200).json(result)
         } catch (error) {
             res.status(400).json({ message: error.message })
@@ -97,6 +131,42 @@ class UserController {
         try {
             const {id} = req.user
             const result = await this.userService.changePassword(id, req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+
+    forgetPass = async (req, res) => {
+        try {
+            const result = await this.userService.forgetPassword(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+
+    confirmCode = async (req, res) => {
+        try {
+            const result = await this.userService.confirmCode(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+
+    changePasswordForForget = async (req, res) => {
+        try {
+            const result = await this.userService.changePasswordForForget(req.body)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+    }
+
+    createCode = async (req, res) => {
+        try {
+            const result = await this.userService.createCode()
             res.status(200).json(result)
         } catch (error) {
             res.status(400).json({ message: error.message })

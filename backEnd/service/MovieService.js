@@ -109,9 +109,9 @@ class MovieService {
 
     getAllForShowtime = async () => {
         let result =  await this.movie.findAll({
-            attributes: ['id', 'title','duration','poster_url','status','director']
+            attributes: ['id', 'title','duration','release_date','poster_url','status','director']
         })
-        return result.filter(item => item.satus != 'ended')
+        return result.filter(item => item.status != 'ended')
     }
 
     validMovieInfo = async (release_date, pub_id_poster) => {
@@ -207,18 +207,24 @@ class MovieService {
             movieUpdate = convertObjectForUpdate(movieUpdate, sourceObj)
             await movieUpdate.save()
 
-            // update categories
-            // xóa, sau đó thêm mới
-            await MovieCategory.destroy({
-                where: {movie_id: id}
-            })
-            await this.createCategories(categories, id)
+            if(!status){
+                // update categories
+                // xóa, sau đó thêm mới
+                await MovieCategory.destroy({
+                    where: {movie_id: id}
+                })
+                await this.createCategories(categories, id)
 
-            const movieCategories = await this.getCategoryOfMovie(id)
+                const movieCategories = await this.getCategoryOfMovie(id)
+
+                return {
+                    ...movieUpdate.dataValues,
+                    Categories: movieCategories?.Categories || []
+                }
+            }
 
             return {
-                ...movieUpdate.dataValues,
-                Categories: movieCategories?.Categories || []
+                ...movieUpdate.dataValues
             }
         }
         catch(err){

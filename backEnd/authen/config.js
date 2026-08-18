@@ -1,5 +1,6 @@
 import {v2 as cloudinary} from 'cloudinary'
 import  Pusher from 'pusher'
+import nodemailer from 'nodemailer'
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
@@ -15,4 +16,12 @@ const pusher = new Pusher({
     useTLS: true
 })
 
-export { cloudinary, pusher }
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "nminhtam425@gmail.com",
+      pass: process.env.APP_PASSWORD
+    }
+})
+
+export { cloudinary, pusher, transporter}

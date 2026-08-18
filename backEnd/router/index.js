@@ -7,6 +7,8 @@ import routerAuthen from "./AuthenRouter.js"
 import routerTest from "./testRouter.js"
 import routerBooking from "./BookingRouter.js"
 import routerCategory from "./CategoryRouter.js"
+import routerPayment from "./PaymentRouter.js"
+import routerChat from "./ChatRouter.js"
 
 export{
     routerUser,
@@ -17,5 +19,7 @@ export{
     routerAuthen,
     routerTest,
     routerBooking,
-    routerCategory
+    routerCategory,
+    routerPayment,
+    routerChat
 }

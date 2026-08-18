@@ -96,20 +96,20 @@ class MovieTheaterService {
         return dataSource
     }
 
-    create = async ({ name,type,countStandard,countVIP,countSweetbox,arrName,arrType,chairPerLine }, id_user) => {
+    create = async ({ name,type,countStandard,countVIP,countSweetbox,arrName,arrType,count_per_row }, id_user) => {
         try{
             const branch = await BranchStaff.findOne({
                 where:{user_id: id_user}
             })
 
-            if(!arrName || !arrType || !chairPerLine || !name)
+            if(!arrName || !arrType || !count_per_row || !name)
                 throw new Error("Thiếu tham số đầu vào !")
 
             let roomIsCreated = await this.room.create({
                 name,
                 branch_id: branch.branch_id,
                 type_id: type,
-                count_per_row: chairPerLine,
+                count_per_row,
                 countStandard,
                 countVIP,
                 countSweetbox
@@ -119,7 +119,7 @@ class MovieTheaterService {
                 where:{id: roomIsCreated.type_id}
             })
 
-            let listChairOfRoom = this.createRoom(arrName,chairPerLine,arrType,roomIsCreated.id)
+            let listChairOfRoom = this.createRoom(arrName,count_per_row,arrType,roomIsCreated.id)
 
             listChairOfRoom =  await Seats.bulkCreate(listChairOfRoom)
 
@@ -137,7 +137,7 @@ class MovieTheaterService {
         }
     }
 
-    update = async ({ room_id,name,type,countStandard,countVIP,countSweetbox,arrName,arrType,chairPerLine }) => {
+    update = async ({ room_id,name,type,countStandard,countVIP,countSweetbox,arrName,arrType,count_per_row }) => {
         try{
             let showtime = await Showtimes.findOne({
                     attributes: ['id'],
@@ -163,12 +163,12 @@ class MovieTheaterService {
             // tiến hành sửa
             let roomUpdate = await findObject(this.room, 'id', room_id)
 
-            let sourceObj = {name,type_id: type, count_per_row: chairPerLine, countStandard,countVIP,countSweetbox}
+            let sourceObj = {name,type_id: type, count_per_row, countStandard,countVIP,countSweetbox}
             roomUpdate = convertObjectForUpdate(roomUpdate, sourceObj)
             await roomUpdate.save()
 
             // tiến hành tạo danh sách ghế mới
-            let listChairOfRoom = this.createRoom(arrName,chairPerLine,arrType,room_id)
+            let listChairOfRoom = this.createRoom(arrName,count_per_row,arrType,room_id)
 
             listChairOfRoom =  await Seats.bulkCreate(listChairOfRoom)
 
@@ -238,13 +238,13 @@ class MovieTheaterService {
 
     delete = async (id) => {
         try{
-            // const roomDelete = await this.room.findOne({
-            //     where: { id: id}
-            // })
-            // if(!roomDelete)
-            //     throw new Error("Không tìm thấy room !")
-
-            // return await roomDelete.destroy()
+            let showtime = await Showtimes.findOne({
+                where: {
+                    room_id: id
+                }
+            })
+            if(showtime)
+                throw new Error("Phòng chiếu đã có suất chiếu, không thể xóa !")
             return this.room.destroy({
                 where: {id: id}
             })

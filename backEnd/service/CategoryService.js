@@ -48,6 +48,13 @@ class CategoryService {
     }
     delete = async (id) => {
         try{
+            let movie = await MovieCategory.findOne({
+                where:{
+                    category_id: id
+                }
+            })
+            if(movie)
+                throw new Error("Đang có phim thuộc thể loại này !")
             return await Categories.destroy({
                 where: {
                     id: id

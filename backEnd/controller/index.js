@@ -6,6 +6,8 @@ import VoucherController from "./VoucherController.js"
 import BookingController from "./BookingController.js"
 import AuthenController from "./AuthenController.js"
 import CategoryController from "./CategoryController.js"
+import PaymentController from "./PaymentController.js"
+import ChatController from "./ChatController.js"
 
 export{
     UserController,
@@ -15,5 +17,7 @@ export{
     VoucherController,
     BookingController,
     AuthenController,
-    CategoryController
+    CategoryController,
+    PaymentController,
+    ChatController
 }

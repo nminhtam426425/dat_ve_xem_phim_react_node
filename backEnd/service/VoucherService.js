@@ -1,6 +1,6 @@
-import {Vouchers, VoucherOfUser, User} from "../model/index.js"
+import {Vouchers, VoucherOfUser, User, sequelize, Bookings} from "../model/index.js"
 import {findObject, convertObjectForUpdate} from "./validate.js"
-import { Op, where } from "sequelize"
+import { Op, Sequelize, where } from "sequelize"
 
 class VoucherService {
     constructor(voucher) {
@@ -23,14 +23,40 @@ class VoucherService {
                 user_id: idUser
             }
         })
+        let voucherAreUsed = await Bookings.findAll({
+            attributes: [],
+            include:[
+                {
+                    model: Vouchers,
+                    attributes: ['id'],
+                    through: {
+                        attributes:[]
+                    }
+                }
+            ],
+            where:{
+                user_id: idUser
+            }
+        })
+        voucherAreUsed = voucherAreUsed.filter(item => item.Vouchers.length > 0)
 
         let vouchers =  await this.voucher.findAll({
             attributes: ['id','code','discount','max_discount_value','min_order_value','expiry_date','usage_limit','remain_usage','discount_type'],
             where: {
-                point_cost: 0
+                point_cost: 0,
+                expiry_date: {
+                    [Op.gte]: new Date()
+                }
             }
         })
-        return vouchers.filter(item => item.remain_usage < item.usage_limit && !voucherOfUser.some(voucher => voucher.voucher_id === item.id))
+        // vì voucherAreUsed là mảng chứa props là 1 mảng
+        //[ {Vouchers: []}
+        //]
+        return vouchers.filter(item => 
+            item.remain_usage < item.usage_limit 
+            && !voucherOfUser.some(voucher => voucher.voucher_id === item.id) 
+            && !voucherAreUsed.some(voucherUsed => voucherUsed.Vouchers.some(temp => temp.id === item.id))
+        )
     }
 
     // danh sách các voucher cho đổi thưởng
@@ -61,12 +87,9 @@ class VoucherService {
             include: [
                 {
                     model: User,
-                    attributes: [],
+                    attributes: ['role'],
                     through: {
-                        attributes: [],
-                        where:{
-                            is_use: 0
-                        }
+                        attributes: ['is_use'],
                     },
                     where: {
                         id: idUser
@@ -79,6 +102,13 @@ class VoucherService {
 
     create = async ({code,min_order_value,discount,max_discount_value,point_cost,expiry_date,usage_limit,type,discount_type}) => {
         try{
+            let codeExist = await this.voucher.findOne({
+                where:{
+                    code
+                }
+            })
+            if(codeExist)
+                throw new Error("Mã code đã tồn tại!")
             return await this.voucher.create({
                 code,
                 min_order_value,
@@ -97,30 +127,31 @@ class VoucherService {
         }
     }
 
-    useVoucher = async (idUser,idVoucher, type) => {
-        let voucherUpdate = await findObject(this.voucher,'id',idVoucher)
-
-        if(voucherUpdate.remain_usage == voucherUpdate.usage_limit && type == "public")
-            throw new Error("Voucher đã hết lượt sử dụng !")
-
-        if(type =="private"){
-            await VoucherOfUser.update(
-                {
-                    is_use: 1
-                },
-                {
+    useVoucher = async (idVoucher) => {
+        try{
+            await sequelize.transaction( async t => {
+                const voucher = await this.voucher.findOne({
                     where: {
-                        user_id: idUser,
-                        voucher_id: idVoucher
-                    }
-                }
-            )
+                        id: idVoucher
+                    },
+                    lock: t.LOCK.UPDATE,
+                    transaction: t
+                })
+                if(voucher.remain_usage == voucher.usage_limit && voucher.remain_usage != 0)
+                    throw new Error("Voucher dã hết lượt sử dụng !")
+                let usage = voucher.remain_usage
+                await voucher.update(
+                    {
+                        remain_usage: usage+1
+                    },
+                    {transaction: t}
+                )
+                return true
+            })
         }
-
-        let remain = voucherUpdate.remain_usage
-        voucherUpdate.remain_usage = ++remain
-        
-        return await voucherUpdate.save()
+        catch(err){
+            throw new Error(err.message)
+        }
     }
 
     calcDiscountValue = async (voucher_id, total_amount) => {
@@ -132,9 +163,45 @@ class VoucherService {
         return (voucher.discount_type == 'percentage') ? Math.min(total_amount * (voucher.discount / 100), voucher.max_discount_value) : voucher.discount
     }
 
+    // hàm cộng lại điểm cho nhưng user có voucher chưa sử dụng nhưng bị admin xóa hoặc cập nhật
+    updateRewardPoint = async (users, voucher, voucher_id) => {
+        if(!users || users.length == 0) return
+        
+        await User.update(
+            { 
+                reward_points: Sequelize.literal(`reward_points + ${Number(voucher.point_cost)}`) 
+            },
+            { 
+                where: { 
+                    id:{
+                        [Op.in]: users
+                    }
+                } 
+            }
+        )
+          
+        await VoucherOfUser.destroy({
+            where:{
+                voucher_id: voucher_id,
+                is_use: 0
+            }
+        })
+    }
+
     updateVoucher = async ({id,code,min_order_value,discount,max_discount_value,point_cost,expiry_date,usage_limit}) => {
         try{
             let voucherUpdate = await findObject(this.voucher, 'id', id)
+            if(voucherUpdate.point_cost > 0){
+                let users = await VoucherOfUser.findAll({
+                    attributes:['user_id'],
+                    where:{
+                        voucher_id: id
+                    }
+                })
+                let idUsers = users.map(item => item.user_id)
+                await this.updateRewardPoint(idUsers, voucherUpdate, id)
+
+            }
             
             let sourceObj = {code,min_order_value,discount,max_discount_value,point_cost,expiry_date,usage_limit}
             voucherUpdate = convertObjectForUpdate(voucherUpdate,sourceObj)
@@ -146,11 +213,23 @@ class VoucherService {
         }
     }
 
-    // hàm xóa nếu người dùng chưa dùng voucher mà xóa trước hạn thì phải phục hồi điểm cho user
+    // hàm xóa nếu người dùng chưa dùng voucher ==>  phục hồi điểm cho user
     deleteVoucher = async (id) => {
-       return await this.voucher.destroy({
+        let voucherUpdate = await findObject(this.voucher, 'id', id)
+        
+        let users = await VoucherOfUser.findAll({
+            attributes:['user_id'],
+            where:{
+                voucher_id: id,
+                is_use: 0
+            }
+        })
+        let idUsers = users.map(item => item.user_id)
+        await this.updateRewardPoint(idUsers, voucherUpdate, id)
+
+        return await this.voucher.destroy({
             where: {id: id}
-       })
+        })
     }
 
     // đổi voucher bằng điểm
@@ -160,6 +239,13 @@ class VoucherService {
 
         if(user.reward_points < voucher.point_cost)
             throw new Error("Điểm của bạn không đủ để đổi voucher này !")
+
+        await this.useVoucher(idVoucher)
+        let remanPoint = user.reward_points - voucher.point_cost
+        
+        await user.update({
+            reward_points: remanPoint
+        })
 
         return await VoucherOfUser.create({
             user_id: idUser,

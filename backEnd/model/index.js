@@ -4,7 +4,6 @@ import Branches from "./entity/Branches.js"
 import BranchStaff from "./entity/BranchStaff.js"
 import Vouchers from "./entity/Vouchers.js"
 import VoucherOfUser from "./entity/VoucherOfUser.js"
-import Feedbacks from "./entity/feedbacks.js"
 import Showtimes from "./entity/Showtimes.js"
 import Bookings from "./entity/Bookings.js"
 import Tickets from "./entity/Tickets.js"
@@ -16,6 +15,9 @@ import Seats from "./entity/Seats.js"
 import TypeTheater from "./entity/TypeTheater.js"
 import BookingVoucher from './entity/BookingVoucher.js'
 import MovieTrending from "./entity/MovieTrending.js"
+import ForgetPass from "./entity/ForgotPass.js"
+import ContentConver from "./entity/ContentConver.js"
+import Conversations from "./entity/Conversations.js"
 
 // bracnhes N-N users
 Branches.belongsToMany(User,{through: BranchStaff, foreignKey: 'branch_id',otherKey: 'user_id'})
@@ -37,13 +39,6 @@ Seats.belongsTo(MovieTheater,{foreignKey: 'room_id'})
 User.belongsToMany(Vouchers,{through: VoucherOfUser, foreignKey: 'user_id',otherKey: 'voucher_id'})
 Vouchers.belongsToMany(User,{through: VoucherOfUser, foreignKey: 'voucher_id',otherKey: 'user_id'})
 
-// users 1-N feedbacks
-User.hasMany(Feedbacks,{foreignKey: 'user_id'})
-Feedbacks.belongsTo(User,{foreignKey: 'user_id'})
-
-// showtimes 1-N feedbacks
-Showtimes.hasMany(Feedbacks,{foreignKey: 'showtime_id'})
-Feedbacks.belongsTo(Showtimes,{foreignKey: 'showtime_id'})
 
 // showtimes 1-N bookings
 Showtimes.hasMany(Bookings,{foreignKey: 'showtime_id'})
@@ -62,10 +57,11 @@ MovieTheater.hasMany(Showtimes, {foreignKey: 'room_id'})
 Showtimes.belongsTo(MovieTheater, {foreignKey: 'room_id'})
 
 //users 1-N bookings (user or staff)
-User.hasMany(Bookings,{foreignKey: 'user_id'})
-Bookings.belongsTo(User,{foreignKey: 'user_id'})
-User.hasMany(Bookings,{foreignKey: 'staff_id'})
-Bookings.belongsTo(User,{foreignKey: 'staff_id'})
+User.hasMany(Bookings, { foreignKey: 'user_id', as: 'CustomerBookings' })
+Bookings.belongsTo(User, { foreignKey: 'user_id', as: 'Customer' })
+
+User.hasMany(Bookings, { foreignKey: 'staff_id', as: 'StaffBookings' })
+Bookings.belongsTo(User, { foreignKey: 'staff_id', as: 'Staff' })
 
 // showtimes 1-N tickets
 Showtimes.hasMany(Tickets,{foreignKey: 'showtime_id'})
@@ -83,6 +79,19 @@ Tickets.belongsTo(Bookings,{foreignKey: 'booking_id'})
 Movies.hasMany(MovieTrending,{foreignKey: 'movie_id'})
 MovieTrending.belongsTo(Movies,{foreignKey: 'movie_id'})
 
+// user 1 - N forgetPass
+User.hasMany(ForgetPass,{foreignKey: 'user_id'})
+ForgetPass.belongsTo(User,{foreignKey: 'user_id'})
+
+User.hasMany(Conversations, { foreignKey: 'user_id', as: 'ConverUser' })
+Conversations.belongsTo(User, { foreignKey: 'user_id', as: 'Customer' })
+
+User.hasMany(Conversations, { foreignKey: 'admin_id', as: 'ConverAdmin' })
+Conversations.belongsTo(User, { foreignKey: 'admin_id', as: 'Admin' })
+
+Conversations.hasMany(ContentConver, {foreignKey: 'conver_id', as: 'Messages'})
+ContentConver.belongsTo(Conversations,{foreignKey: 'conver_id', as: 'Conversations'})
+
 export {
     sequelize,
     DataTypes,
@@ -92,7 +101,6 @@ export {
     Branches,
     BranchStaff,
     Showtimes,
-    Feedbacks,
     Vouchers,
     Tickets,
     Bookings,
@@ -103,5 +111,9 @@ export {
     MovieTheater,
     Seats,
     TypeTheater,
-    MovieTrending
+    MovieTrending,
+    ForgetPass,
+    BookingVoucher,
+    ContentConver,
+    Conversations
 }

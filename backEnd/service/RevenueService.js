@@ -1,4 +1,4 @@
-import { Bookings, sequelize } from "../model/index.js"
+import { Bookings, sequelize, User } from "../model/index.js"
 import MovieService from "./MovieService.js"
 import { Op } from "sequelize"
 
@@ -10,6 +10,17 @@ class RevenueService {
     getRevenueWeek = async ({startMark, endMark}) => {
         let dataLabelRevenue = this.createArrMonToSun(startMark)
         let revenueWeek = await this.getRevenueFromStartToEndMark(startMark, endMark)
+
+        let startMarkBefore = new Date(startMark)
+        startMarkBefore.setDate(startMarkBefore.getDate() - 7)
+
+        let endMarkBefore = new Date(endMark)
+        endMarkBefore.setDate(endMarkBefore.getDate() - 7)
+        let revenueWeekBefore = await this.getRevenueFromStartToEndMark(startMarkBefore, endMarkBefore)
+        
+        // tính toán giá trị tuần trước --> % trên FE
+        let totalRevueWeekbefore = revenueWeekBefore.reduce( (pre, cur)=>pre+=parseInt(cur.revenue),0)
+
         let tickets = await Bookings.findAll({
             attributes: ['id','price_at_booking']
         })
@@ -18,7 +29,6 @@ class RevenueService {
 
         for(let i of revenueWeek){
             let id = i.booking_date.substr(0,10)
-            console.log(id)
             for(let j = 0; j < 7; j++){
                 if(dataLabelRevenue[j] == id){
                     arrayContainValue[j] = parseInt(i.revenue)
@@ -28,18 +38,25 @@ class RevenueService {
         }
 
         let revenueMovie = await MovieService.getDataRevenue()
+        let users = await User.findAll({
+            attributes: ['id','created_at','role'],
+            where: {
+                role: 'user'
+            }
+        })
 
         return {
             dataRevenue: arrayContainValue,
             movies: [
                 ...revenueMovie
             ],
-            tickets: tickets
+            tickets: tickets,
+            totalRevueWeekbefore,
+            users
         }
     }
 
     createArrMonToSun = (startMark) => {
-        console.log(startMark)
         let dataRevenue = []
         for (let i = 0; i < 7; i++) {
             let current = new Date(startMark) 
@@ -59,7 +76,8 @@ class RevenueService {
             where: {
                 booking_date: {
                     [Op.between]: [new Date(startMark), new Date(endMark)]
-                }
+                },
+                payment_status: 'paid'
             },
             group: [sequelize.fn('DATE', sequelize.col('booking_date'))],
             raw: true

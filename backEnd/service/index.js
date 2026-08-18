@@ -9,6 +9,8 @@ import AuthenService from "./AuthenService2.js"
 import CategoryService from "./CategoryService.js"
 import RevenueService from "./RevenueService.js"
 import TypeTheaterService from "./TypeTheaterService.js"
+import PaymentService from "./PaymentService.js"
+import ChatService from "./ChatService.js"
 
 export {
     UserService,
@@ -21,5 +23,7 @@ export {
     AuthenService,
     CategoryService,
     RevenueService,
-    TypeTheaterService
+    TypeTheaterService,
+    PaymentService,
+    ChatService
 }

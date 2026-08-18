@@ -1,20 +1,120 @@
-import { User,BranchStaff, Branches, Bookings, Tickets } from "../model/index.js"
-import { validatePassword,validateUsername, convertObjectForUpdate, findObject } from "./validate.js"
+import { User,BranchStaff, Branches, Bookings, Tickets, sequelize, ForgetPass } from "../model/index.js"
+import { validatePassword,validateUsername, convertObjectForUpdate, findObject, countByCondition, countMonthNow } from "./validate.js"
 import crypto from "crypto"
 import bcrypt from "bcrypt"
-import {cloudinary} from '../authen/config.js'
+import {cloudinary, transporter} from '../authen/config.js'
+import { Op } from "sequelize"
+
+function generateToken(timestamp) {
+    const signature = crypto.createHmac('sha256', process.env.SECRET_KEY_FOR_REGISTER)
+      .update(timestamp.toString())
+      .digest('hex')
+    return `${timestamp}.${signature}`
+}
 
 class UserService {
     constructor(user) {
         this.user = user;
     }
 
-    getAll = async () => {
-        let result =  await this.user.findAll()
-        return result.filter(item => item.role != 'admin')
+    calcPercent = async () => {
+        let users = await this.user.findAll({
+            attributes: ['id', 'fullname', 'email', 'phone', 'username', 'avatar', 'role', 'is_activating', 'created_at']
+        })
+        let percentTotal = Math.floor((countMonthNow(users)/users.length)*100)
+        let staff = countByCondition(users, 'role', 'staff')
+        let user = countByCondition(users, 'role', 'user')
+        let active = countByCondition(users, 'is_activating', 1)
+        let percentUser = Math.floor((countMonthNow(users.filter(item => item.role == 'user'))/users.length)*100)
+
+        return {
+            total: users.length,
+            percentTotal,
+            staff,
+            user,
+            active,
+            percentUser
+        }
     }
 
-    create = async ({username,password,fullname,role}) => {
+    getAllForStaff = async () => {
+        return await this.user.findAll({
+            attributes: ['id', 'fullname','username', 'email', 'phone', 'username', 'avatar', 'role', 'is_activating', 'created_at'],
+            where: {
+                role: 'user',
+                is_activating: 1
+            }
+        })
+    }
+
+    getAll = async ({page, limit, role, is_activating, search}) => {
+        try {
+            const offset = (page - 1) * limit
+            
+            const whereCondition = {}
+        
+            if (role) 
+              whereCondition.role = role
+        
+            // Lọc theo trạng thái Kích hoạt
+            if (is_activating !== undefined && is_activating !== '') 
+              whereCondition.is_activating = is_activating === '1'
+            
+            // Tìm kiếm theo Fullname hoặc Email
+            if (search && search.trim() !== '') {
+              const keyword = `%${search.trim()}%`
+              whereCondition[Op.or] = [
+                { fullname: { [Op.like]: keyword } },
+                { email: { [Op.like]: keyword } }
+              ]
+            }
+
+            let {count} = await this.user.findAndCountAll({
+                where: whereCondition
+            })
+        
+            const { rows } = await this.user.findAndCountAll({
+                attributes: [
+                  'id', 'fullname', 'email', 'phone', 'username', 'avatar', 'role', 'is_activating', 'created_at',
+                  [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('CustomerBookings.price_at_booking')), 0), 'total_revenue']
+                ],
+                include: [
+                  {
+                    model: Bookings,
+                    attributes: [], 
+                    duplicating: false, // Giúp count không bị nhân bản khi dùng với findAndCountAll,
+                    as: 'CustomerBookings'
+                  }
+                ],
+                where: whereCondition,
+                group: ['User.id'], 
+                subQuery: false, 
+                limit: Number(limit),
+                offset: offset,
+                raw: true 
+            })
+        
+            return {
+                data: rows,
+                pagination: {
+                    totalItems: count,
+                    totalPages: Math.ceil(count / limit),
+                    currentPage: page,
+                    itemsPerPage: limit
+                }
+            }
+          } catch (error) {
+            throw new Error(error.message)
+          }
+    }
+
+    createCode = async () => {
+        const timestamp = Date.now()
+        const token = generateToken(timestamp)
+        return token
+    }
+
+    create = async (username,password,email,fullname,role="user",token,byStaff=false) => {
         try{
             if(!username || !password)
                 throw new Error("Vui lòng nhập tên đăng nhập và mật khẩu !")
@@ -31,11 +131,39 @@ class UserService {
             if(!validateUsername(username))
                 throw new Error("Tên đăng nhập chỉ chứa chữ và số, không chứa khoảng trắng !")
 
+            // chỉ xét ở trang đăng ký - register
+            // byStaff = true là tạo tài khoản ở quầy, không cần xác thực
+            if(role == 'user' && !byStaff) {
+                //Thời gian tạo form không hợp lệ !
+                if (!token || !token.includes('.')) 
+                    return {message: 'Đăng ký thành công!'}
+
+                const [timestampStr, clientSignature] = token.split('.')
+                const timestamp = parseInt(timestampStr, 10)
+
+                //So sánh chữ ký HMAC để đảm bảo Timestamp không bị sửa đổi
+                const expectedSignature = crypto.createHmac('sha256', process.env.SECRET_KEY_FOR_REGISTER)
+                    .update(timestampStr)
+                    .digest('hex')
+
+                //Thời gian tạo form đã bị can thiệp!
+                if (clientSignature !== expectedSignature) 
+                    return {message: 'Đăng ký thành công!'}
+
+                const timeTaken = Date.now() - timestamp
+                // Nếu thời gian từ lúc tạo form đến lúc submit quá nhanh (ví dụ < 3 giây), có thể là bot
+                if (timeTaken < process.env.MIN_SUBMIT_TIME_MS) 
+                    return { message: 'Đăng ký thành công!' }
+
+                if (timeTaken > process.env.MAX_SUBMIT_TIME_MS) 
+                    throw new Error("Vui lòng tải lại trang và thử lại!")
+            }
+
             const passHash = await bcrypt.hash(password, Number(process.env.SALT_ROUNDS))
             const result = await this.user.create({
                 id: crypto.randomUUID(),
                 fullname:  fullname,
-                email:  null,
+                email:  email || null,
                 username: username,
                 password: passHash,
                 phone: null,
@@ -50,9 +178,31 @@ class UserService {
         }
     }
 
-    update = async (id,fullname,email,phone,birthdayFE) => {
+    // tạo tài khoản user ở quầy, không cần xác thực
+    createByStaff = async (username,password,fullname) => {
         try{
+            return await this.create(username,password,null,fullname,"user","",true)
+        }
+        catch(err){
+            console.log(err.message)
+            throw new Error(err.message)
+        }
+    }
+
+    update = async (id,fullname,email="",phone,birthdayFE) => {
+        try{
+            let emailDupliacte = null
+            if(email != ""){
+                emailDupliacte = await User.findOne({
+                    where:{
+                        email: email
+                    }
+                })
+            }
+            
             let userUpdate = await findObject(this.user, 'id', id)
+            if(emailDupliacte && userUpdate.id != emailDupliacte.id)
+                throw new Error("Email đã có người đăng ký !")
 
             // dựa vào key để xem prop nào được truyền vào từ FE
             // nếu props nào undefined hoặc null thì bỏ qua trong vòng hàm
@@ -65,7 +215,6 @@ class UserService {
             return "oke"
         }
         catch(err){
-            console.log(err)
             throw new Error(err.message)
         }
     }
@@ -97,7 +246,7 @@ class UserService {
         }
     }
 
-    createStaff = async (idUser,{fullname,username,password}) => {
+    createStaff = async (idUser,fullname,username,password,email) => {
         try{
             const userBranch = await findObject(BranchStaff,'user_id',idUser)
             const branch = await findObject(Branches, 'id', userBranch.branch_id)
@@ -105,11 +254,12 @@ class UserService {
             const request = {
                 fullname,
                 username,
+                email,
                 password,
                 role: 'staff'
             }
 
-            const accountStaff = await this.create(request)
+            const accountStaff = await this.create(username,password,email,fullname,"staff")
             await BranchStaff.create({
                 branch_id: branch.id,
                 user_id: accountStaff.id
@@ -123,7 +273,7 @@ class UserService {
 
     getInfo = (id_user) => {
         return this.user.findOne({
-            attributes: ['id','fullname','phone','email','avatar','created_at','role','birthday'],
+            attributes: ['id','fullname','phone','email','avatar','created_at','role','birthday','reward_points'],
             where: {id: id_user}
         })
     }
@@ -161,6 +311,7 @@ class UserService {
 
     // tính toán giá trị theo từng tháng
     // tử mảng lấy từ database truyền vào
+    // dùng cho profile cá nhân
     generateSpendingReport = (rawData) => {
         const currentMonth = new Date().getMonth()
         const spending = {
@@ -245,6 +396,114 @@ class UserService {
 
         return {
             message: "Cập nhật mật khẩu thành công !"
+        }
+    }
+
+    generateRandomString = () => {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        let result = ''
+        for (let i = 0; i < 8; i++) {
+          const randomIndex = Math.floor(Math.random() * characters.length)
+          result += characters[randomIndex]
+        }
+        return result.toUpperCase()
+    }
+
+    // bước 1: tạo mã xác nhận, gửi về gmail đăng ký tài khoản
+    forgetPassword = async ({username}) => {
+        let user = await this.user.findOne({
+            where: {
+                username
+            }
+        })
+        if(!user || user.role != 'user') 
+            throw new Error ("Tài khoản không hợp lệ !")
+        
+        if(user.email==null || user.email == "")
+            throw new Error ("Tài khoản chưa đăng ký gmail, vui lòng liện hệ trực tiếp ADMIN để được xử lý !")
+
+        let code_reset = this.generateRandomString()
+
+        let expired_date = new Date(new Date().getTime() + 5*60*1000)
+        
+        await ForgetPass.create({
+            user_id: user.id,
+            code_reset,
+            expired_date,
+            created_at: new Date()
+        })
+
+        try{
+            const mailOptions = {
+                from: "nminhtam425@gmail.com",
+                to: user.email,
+                subject: "Reset mật khẩu",
+                text: `Xin chào, đây là CODE: ${code_reset} để reset mật khẩu của bạn, có hiệu lực trong 5 phút.`,
+               
+            }
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) 
+                    console.log("Lỗi khi gửi mail:", error)
+                else 
+                    console.log("Email đã được gửi:", info.response)
+                }
+            )
+        }
+        catch(err){
+            throw new Error(err.message)
+        }
+
+       return {
+            url: process.env.FE+'/xac-nhan'
+       }
+    }
+
+    // bước 2 sau khi quên mật khẩu --> xác nhận mã code
+    confirmCode = async ({code_reset}) => {
+        let code = await ForgetPass.findOne({
+            where: {
+                code_reset
+            }
+        })
+        if(!code)
+            throw new Error("Không hợp lệ !")
+
+        let today = new Date()
+        let expire = new Date(code.expired_date)
+
+        await ForgetPass.destroy({
+            where: {
+                expired_date: {
+                    [Op.lt]: new Date()
+                }
+            }
+        })
+
+        if(expire - today < 0)
+            throw new Error("Không hợp lệ !")
+        return {
+            user_id: code.user_id
+        }
+    }
+
+    // bước 3: đổi mật khẩu sử dụng id của user - tránh staff, user
+    changePasswordForForget = async ({user_id, new_pass}) => {
+        console.log(new_pass)
+        let user = await findObject(this.user, 'id', user_id)
+        if(!user)
+            throw new Error("Không hợp lệ !")
+
+        if(!validatePassword(new_pass))
+            throw new Error("Mật khẩu phải có ít nhất 8 kí tự và chỉ được chứa chữ và số !")
+
+        const passHash = await bcrypt.hash(new_pass, Number(process.env.SALT_ROUNDS))
+
+        let sourceObj = {password: passHash}
+        user = convertObjectForUpdate(user, sourceObj)
+        await user.save()
+
+        return {
+            username: user.username
         }
     }
 }

@@ -1,7 +1,8 @@
-import {Tickets, Seats, Showtimes, Bookings, Movies, MovieTheater, TypeTheater, Categories, MovieCategory, VoucherOfUser} from "../model/index.js"
+import {Tickets, Seats, Showtimes, Bookings, Movies, MovieTheater, TypeTheater, Categories, VoucherOfUser, User, BookingVoucher} from "../model/index.js"
 import crypto from "crypto"
 import {pusher} from "../authen/config.js"
 import { Op } from "sequelize"
+import { findObject } from "./validate.js"
 
 class TicketService {
     constructor(ticket) {
@@ -38,13 +39,8 @@ class TicketService {
             return result
     }
 
-    addMinutes = (date, minutes) => {
-        return new Date(date.getTime() + minutes*60*1000)
-    }
-
     // Đặt vé: nếu đã có booking_id thì update booking_id vào ticket, 
     // nếu chưa có thì tạo mới booking rồi update booking_id vào ticket
-    // type là có đăng nhập hay chưa đăng nhập
     bookingTicket = async (seat_number, showtime_id, user_id, socket_id) => {
         try{
             const showtime = await Showtimes.findOne({
@@ -60,7 +56,7 @@ class TicketService {
                 is_scanned: 0,
                 scanned_at: null,
                 expired_at: expired_at,
-                status: 'holding'
+                status: 'pending'
             })
             
             await pusher.trigger(`showtimes-${showtime_id}`,
@@ -121,7 +117,7 @@ class TicketService {
                 expired_at: {
                     [Op.lt]: new Date()
                 },
-                status: 'holding',
+                status: 'pending',
                 showtime_id: showtime_id
             }
         })
@@ -141,6 +137,35 @@ class TicketService {
         return result
     }
 
+    // xoá vé của người dùng hết hạn, gửi đến các user khác
+    deleteMyTicketExpired = async (user_id, showtime_id, seats_number, socket_id) => {
+        let result =  await this.ticket.destroy({
+            where: {
+                status: 'pending',
+                booking_id: user_id
+            }
+        })
+        // xóa hết các ghế tương ứng của user
+        // vì seats_id là mảng rồi nên không tạo mảng mảng như các hàm trên
+        await pusher.trigger(`showtimes-${showtime_id}`,
+            'booking_seat',
+            {
+                showtimeId: showtime_id,
+                seatId: seats_number,
+                type: 'unbook'
+            },
+            {
+                socket_id: socket_id
+            }
+        )
+        return result
+    }
+
+    // cộng thêm thời gian cho user thanh toán
+    addMinutes = (date, minutes) => {
+        return new Date(date.getTime() + minutes * 60 * 1000);
+    }
+
     // chưa xử lý voucher
     paymentSuccess = async (idUser,showtime_id,price_at_booking,role,userEarnPoint=null,useVoucher) => {
         let dataForCreate = {
@@ -148,12 +173,13 @@ class TicketService {
             user_id: role == 'user' ? idUser : userEarnPoint?.id || null,
             staff_id: role == 'staff' ? idUser : null,
             showtime_id: showtime_id,
-            payment_status: 'paid',
+            payment_status: role == 'staff' ? 'paid' : 'pending',
             price_at_booking: price_at_booking
         }
+        let result = await Bookings.create(dataForCreate)
 
         // cập nhật - tạo mới voucher sử dụng
-        if(useVoucher.length > 0){
+        if(useVoucher?.length > 0){
             let pubVoucher = useVoucher.find(item => item.type == 'public')
             let privateVoucher = useVoucher.find(item => item.type == 'private')
 
@@ -170,23 +196,27 @@ class TicketService {
                         }
                     }
                 )
+                await BookingVoucher.create({
+                    booking_id: dataForCreate.id,
+                    voucher_id: privateVoucher.id
+                })
             }
 
             if(pubVoucher){
-                // thêm voucher public đã qua sử dụng 
-                await VoucherOfUser.create({
-                    user_id: idUser,
-                    voucher_id: pubVoucher.id,
-                    is_use: 1
+                await BookingVoucher.create({
+                    booking_id: dataForCreate.id,
+                    voucher_id: pubVoucher.id
                 })
             }
         }
 
-        let result = await Bookings.create(dataForCreate)
+        // nếu là staff -> status == 'paid' không quan tâm đến field expired_at
+        // ngược lại user -> cập nhật lại thêm thời hạn thanh toán
         await this.ticket.update(
             {
                 booking_id: result.id,
-                status: 'paid'
+                status: dataForCreate.payment_status,
+                expired_at: this.addMinutes(new Date(),6)
             },
             {
                 where: {
@@ -195,6 +225,22 @@ class TicketService {
                 }
             }
         )
+        if(userEarnPoint){
+            let showtime = await findObject(Showtimes, 'id', showtime_id)
+            let user = await findObject(User, 'id', userEarnPoint.id)
+            let tickets = await this.ticket.findAll({
+                where: {
+                    showtime_id: showtime_id,
+                    booking_id: result.id
+                }
+            })
+            let point = showtime.point*tickets.length + user.reward_points
+            await user.update({
+                reward_points: point
+            })
+        }
+       
+
         return result
     }
 
@@ -203,7 +249,8 @@ class TicketService {
         let result =  await Bookings.findAll({
             attributes:['id','price_at_booking'],
             where: {
-                user_id: idUser
+                user_id: idUser,
+                payment_status: 'paid'
             },
             include:[
                 {
@@ -343,6 +390,18 @@ class TicketService {
             }
         }
 
+        await this.ticket.update(
+            {
+                is_scanned: 1
+            },
+            {
+                where: {
+                    booking_id: result.id,
+                    showtime_id: result.showtime_id
+                }
+            }
+        )
+
         let maxAge = await this.getAgePermit(result.Showtime.Movie.id)
         
         return {
@@ -355,6 +414,55 @@ class TicketService {
                 maxAge: maxAge
             }
         }
+    }
+
+    // lấy danh sách các vé và thông tin vé 
+    getInfoDetailShowtime = async (showtime_id) => {
+        let bookings =  await Bookings.findAll({
+            attributes:['id'],
+            where: {
+                showtime_id
+            },
+            include:[
+                {
+                    model: User,
+                    as: 'Customer', 
+                    attributes: ['fullname', 'role'] 
+                },
+                {
+                    model: User,
+                    as: 'Staff', 
+                    attributes: [ 'fullname', 'role'] 
+                }
+            ]
+        })
+        let tickets = await this.ticket.findAll({
+            attributes:['seat_number','booking_id'],
+            where: {
+                showtime_id,
+                status: 'paid'
+            }
+        })
+        let bookingMap = {}
+        bookings.forEach(item =>{
+            bookingMap[item.id] = {
+                data: {
+                    customer: item.Customer,
+                    staff: item.Staff
+                }
+            }
+        })
+
+        let finalResult = []
+        tickets.forEach(item => {
+            finalResult.push({
+                data:{
+                    ...item.dataValues,
+                    ...bookingMap[item.booking_id].data
+                }
+            })
+        })
+        return finalResult
     }
 }
 

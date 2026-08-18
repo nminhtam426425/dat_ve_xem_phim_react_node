@@ -15,13 +15,13 @@ class ShowtimeService {
 
     // hàm dùng để dựa vào thời gian của phim để tính toán thời gian end_time cho 1 showtimes
     addMinutes = (date, minutes) => {
-        return new Date(date.getTime() + minutes * 60 * 1000);
+        return new Date(date.getTime() + minutes * 60 * 1000)
     }
 
     // tạo suất chiếu mới
     // kiểm tra xem suất chiếu mới có trùng với suất chiếu nào đã tồn tại hay không
     // tạo các vé của phòng chiếu tương ứng
-    create = async ({ distance_minutes=15,movie_id,room_id,start_time,price,max_tickets,limit_minutes=5,point}) => {
+    create = async ({ distance_minutes=0,movie_id,room_id,start_time,price,max_tickets,limited_number_of_minutes=5,point}) => {
         try{
             if(!movie_id || !room_id || !start_time || !price)
                 throw new Error("Thiếu tham số đầu vào !")
@@ -39,9 +39,22 @@ class ShowtimeService {
                 end_time: showtime.endTime,
                 price: price,
                 max_tickets: max_tickets || 2,
-                limit_minutes: limit_minutes || 5,
+                limited_number_of_minutes: limited_number_of_minutes || 5,
                 point: point || 0
             })
+
+            await Movies.update(
+                {
+                    status: 'showing'
+                },
+                {
+                    where:{
+                        release_date: {
+                            [Op.lte]: new Date()
+                        }
+                    }
+                }
+            )
 
             return {
                 ...result.dataValues
@@ -52,24 +65,21 @@ class ShowtimeService {
         }
     }
 
-    update = async ({ showtime_id,movie_id,room_id,start_time,end_time,price,max_tickets,limited_number_of_minutes,point,distance_minutes=15}) => {
+    update = async ({ showtime_id,movie_id,room_id,start_time,end_time,price,max_tickets,limited_number_of_minutes,point,distance_minutes=0}) => {
         try{
             let showtimeUpdate = await findObject(this.showtime, 'id', showtime_id)
             
-            if(showtimeUpdate.start_time != start_time){
-                const showtime = await this.validShowtime(movie_id || showtimeUpdate.movie_id, start_time, room_id || showtimeUpdate.room_id, distance_minutes, "update")
-            
-                if(showtime.showtime.length > 0 ){
-                    let conflictShowtime = false
-                    for(let i of showtime.showtime){
-                        if(i.id == showtime_id) continue
-                        conflictShowtime = true
-                        break
-                    }
-                    if(conflictShowtime)
-                        throw new Error("Suất chiếu bị trùng !")
+            const showtime = await this.validShowtime(movie_id || showtimeUpdate.movie_id, start_time, room_id || showtimeUpdate.room_id, distance_minutes, "update")
+        
+            if(showtime.showtime.length > 0 ){
+                let conflictShowtime = false
+                for(let i of showtime.showtime){
+                    if(i.id == showtime_id) continue
+                    conflictShowtime = true
+                    break
                 }
-                    
+                if(conflictShowtime)
+                    throw new Error("Suất chiếu bị trùng !")
             }
             
             let sourceObj = {movie_id,room_id,start_time,end_time,price,max_tickets,limited_number_of_minutes,point}
@@ -127,18 +137,12 @@ class ShowtimeService {
             const showtime = await this.showtime.findOne({
                 where: {
                     room_id: room_id,
-                    [Op.or]: [
-                        {
-                            start_time: {
-                                [Op.between]: [startTime, endTime]
-                            }
-                        },
-                        {
-                            end_time: {
-                                [Op.between]: [startTime, endTime]
-                            }
-                        }
-                    ]
+                    start_time: {
+                        [Op.lt]: endTime 
+                    },
+                    end_time: {
+                        [Op.gt]: startTime 
+                    }
                 }
             })
     
@@ -152,18 +156,12 @@ class ShowtimeService {
         const showtime = await this.showtime.findAll({
             where: {
                 room_id: room_id,
-                [Op.or]: [
-                    {
-                        start_time: {
-                            [Op.between]: [startTime, endTime]
-                        }
-                    },
-                    {
-                        end_time: {
-                            [Op.between]: [startTime, endTime]
-                        }
-                    }
-                ]
+                start_time: {
+                    [Op.lt]: endTime 
+                },
+                end_time: {
+                    [Op.gt]: startTime 
+                }
             }
         })
 
@@ -183,7 +181,7 @@ class ShowtimeService {
         let endDay = new Date(mark.getFullYear(), mark.getMonth(), mark.getDate(),23,59,59)
 
         const showtimes = await this.showtime.findAll({
-            attributes: ['id','start_time','end_time','room_id','price','max_tickets','movie_id','point'],
+            attributes: ['id','start_time','end_time','room_id','price','max_tickets','movie_id','point','limited_number_of_minutes'],
             where: {
                 [Op.and]: [
                     {
@@ -229,7 +227,8 @@ class ShowtimeService {
                         max_tickets: i.max_tickets,
                         point: i.point,
                         room_id: i.room_id,
-                        movie_id: i.movie_id
+                        movie_id: i.movie_id,
+                        limited_number_of_minutes: i.limited_number_of_minutes
                     })
                     break
                 }
@@ -267,7 +266,7 @@ class ShowtimeService {
                                 }
                             },
                             {
-                                end_time: {
+                                start_time: {
                                     [Op.lte]: endDay
                                 }
                             }
@@ -291,7 +290,7 @@ class ShowtimeService {
     deleteTicketNotPayment = async (showtime_id) => {
         await Tickets.destroy({
             where: {
-                status: 'holding',
+                status: 'pending',
                 expired_at: {
                     [Op.lte]: new Date()
                 },
@@ -351,7 +350,7 @@ class ShowtimeService {
     // hàm dùng chung cho tìm các suất chiếu cùng ngày
     getShowtimeByMark = async (mark) => {
         return await Movies.findAll({
-            attributes: ['id','title','description','duration','poster_url','trailer_url','director'],
+            attributes: ['id','title','description','duration','poster_url','trailer_url','director','status'],
             include: [
                {
                     model: Showtimes,
@@ -380,7 +379,7 @@ class ShowtimeService {
         let showing = await this.getShowtimeByMark(mark)
 
         let comingSoon = await Movies.findAll({
-            attributes: ['id','title','description','duration','poster_url','trailer_url','director'],
+            attributes: ['id','title','description','duration','release_date','poster_url','trailer_url','director'],
             where:{
                 status: 'coming_soon'
             }
@@ -395,7 +394,7 @@ class ShowtimeService {
         })
 
         return {
-            showing: showing,
+            showing: showing.filter(item => item.status != 'coming_soon'),
             coming_soon: comingSoon
         }
     }
@@ -408,7 +407,7 @@ class ShowtimeService {
         return true
     }
 
-    getShowtimeByMovie = async (idMovie, date) => {
+    getShowtimeByMovie = async (idMovie, date=newDate()) => {
         let mark = new Date(date)
         let startDay = new Date()
 
@@ -427,7 +426,7 @@ class ShowtimeService {
                 },
                 {
                     model: Showtimes,
-                    attributes: ['id','start_time','price','max_tickets','limited_number_of_minutes'],
+                    attributes: ['id','start_time','end_time','price','max_tickets','limited_number_of_minutes'],
                     where: {
                         [Op.and]: [
                             {
@@ -436,7 +435,7 @@ class ShowtimeService {
                                 }
                             },
                             {
-                                end_time: {
+                                start_time: {
                                     [Op.lte]: endDay
                                 }
                             }
@@ -446,36 +445,6 @@ class ShowtimeService {
                 }
             ]
         })
-        // const showtimes = await this.showtime.findAll({
-        //     attributes: ['id','start_time','price'],
-        //     where: {
-        //         [Op.and]: [
-        //             {
-        //                 start_time: {
-        //                     [Op.gte]: startDay
-        //                 }
-        //             },
-        //             {
-        //                 end_time: {
-        //                     [Op.lte]: endDay
-        //                 }
-        //             }
-        //         ],
-        //         movie_id: idMovie
-        //     },
-        //     include: [
-        //         {
-        //             model: MovieTheater,
-        //             attributes: ['name'],
-        //             include: [
-        //                 {
-        //                     model: TypeTheater,
-        //                     attributes: ['type_name']
-        //                 }
-        //             ]
-        //         }
-        //     ]
-        // })
 
         return test
     }

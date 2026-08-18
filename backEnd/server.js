@@ -8,7 +8,9 @@ import {routerUser,
     routerAuthen,
     routerTest,
     routerBooking,
-    routerCategory
+    routerCategory,
+    routerPayment,
+    routerChat
 } from './router/index.js'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
@@ -34,11 +36,18 @@ server.use('/auth',routerAuthen)
 server.use('/testGmail',routerTest)
 server.use('/bookings',routerBooking)
 server.use('/categories',routerCategory)
+server.use('/payments',routerPayment)
+server.use('/chats',routerChat)
 
 server.get('/',(req,res)=>{
     res.status(200).json("Hello world !")
 })
-
 server.listen(process.env.PORT,process.env.HOST,()=>{
     console.log(`Server is running at http://${process.env.HOST}:${process.env.PORT}`);
 })
+
+const tempFC = () => {
+    setInterval(()=>{
+        console.log("hehe is running");
+    },1000)
+}

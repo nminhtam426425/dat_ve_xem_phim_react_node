@@ -38,8 +38,30 @@ const findObject = async (obj, key, valueId) => {
         where: { [key]: valueId}
     })
     if(!reuslt)
-         throw new Error("Not found object !")
+         throw new Error(`Not found object - ${valueId}!`)
     return reuslt
+}
+
+const countByCondition = (array, key, value) => {
+    if(!array) return ""
+    return array.filter( item => item[key] == value).length
+}
+
+
+const countByDateCondition = (array, value) => {
+    if(!array) return ""
+    return array.filter( item => {
+        let created = new Date(item.created_at)
+        return created.getMonth() <= value
+    }).length
+}
+
+// đếm các phần tử theo tháng trước tính từ tháng này
+// giả sử: admin đăng nhập tháng 6, sẽ đếm các phần tử tháng 5 để tính toán số lượng % tăng trưởng
+const countMonthNow = (array) => {
+    if(!array) return ""
+    let monthNow = new Date()
+    return array.length - countByDateCondition(array, monthNow.getMonth() - 1)
 }
 
 export {
@@ -48,5 +70,7 @@ export {
     validateUsername,
     validateFullname,
     convertObjectForUpdate,
-    findObject
+    findObject,
+    countByCondition,
+    countMonthNow
 }
