@@ -1,8 +1,10 @@
 import { formatVND2 } from "../../../validate"
 import {toast} from "sonner"
 import { customeFetch, apiUserService } from "../../../config"
+import { useNavigate } from "react-router-dom"
 
 const ConfirmBook = ({confirm, setConfirm}) => {
+    const navigate = useNavigate()
     const handlePayment = async () => {
         try{
             let dataForApi = {
@@ -14,6 +16,12 @@ const ConfirmBook = ({confirm, setConfirm}) => {
             const res = await customeFetch(apiUserService.baseURL+'/payments/vnpay/create-payment','authen','POST',JSON.stringify(dataForApi))
             if(res.ok){
                 const data = await res.json()
+                // trường hợp đặc biệt --> giảm giá về 0
+                if(data?.paymentStatus == 'special'){
+                    toast.success("Đặt vé thành công !")
+                    navigate('/user/history')
+                    return
+                }
                 window.location.href = data.paymentUrl
             }
             else {
@@ -80,7 +88,7 @@ const ConfirmBook = ({confirm, setConfirm}) => {
                                     className="w-full pl-4 pr-4 py-2 bg-white text-primary border border-secondary/20 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-md"
                                     id="price"
                                     >
-                                    {formatVND2(confirm?.valueBeforeDiscount - confirm?.price_at_booking)}
+                                    {formatVND2(confirm?.priceIsDiscount)}
                                 </h2>
                             </div>
                         </div>

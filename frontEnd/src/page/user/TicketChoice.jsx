@@ -15,6 +15,7 @@ const TicketChoice = () => {
     const [confirm, setConfirm] = useState(false)
     const [showVoucher, setShowVoucher] = useState(false)
     const [priceBooking, setPriceBooking] = useState(0)
+    const [priceIsDiscount, setPriceIsDiscount] = useState(0)
     // giữ tiền lúc chưa áp mã
     const [valueBeforeDiscount, setValueBeforeDiscount] = useState(0)
     const [msg, setMsg] = useState('Đã đạt đến số vé tối đa !')
@@ -114,6 +115,7 @@ const TicketChoice = () => {
         priceBooking,
         valueBeforeDiscount,
         useVoucher,
+        priceIsDiscount,
         setListChair,
         setConfirm,
         setShowVoucher,
@@ -135,7 +137,8 @@ const TicketChoice = () => {
             priceAfterDiscount={priceBooking}
             setPriceBooking={setPriceBooking}
             useVoucher={useVoucher}
-            setUseVoucher={setUseVoucher}/>
+            setUseVoucher={setUseVoucher}
+            setPriceIsDiscount={setPriceIsDiscount}/>
         <ConfirmBook confirm={confirmBook} setConfirm={setConfirmBook}/>
         <Footer/>
     </>

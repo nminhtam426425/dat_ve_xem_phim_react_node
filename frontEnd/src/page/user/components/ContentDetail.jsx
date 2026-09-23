@@ -18,7 +18,7 @@ const formatShowtimeInfo = (showtime) => {
     if(!showtime) return ""
     return `${showtime.start_time.substr(11, 5)} - ${showtime.end_time.substr(11, 5)} : ${showtime.price/1000}K` 
 }
-const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOfMovie}) => {
+const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOfMovie, dateMark}) => {
     const navigate = useNavigate()
     const targetShowtime = useRef(null)
     const [movieByCates, setMovieByCates] = useState([])
@@ -139,7 +139,7 @@ const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOf
                         <p className="text-zinc-500 font-body-md">Chọn rạp chiếu&nbsp;</p>
                     </div>
                     
-                    <DateSelector dateChosen={dateChosen} setDateChosen={setDateChosen}/>
+                    <DateSelector dateChosen={dateChosen} setDateChosen={setDateChosen} dateMark={dateMark}/>
                     
                 </div>
 
@@ -194,13 +194,13 @@ const ContentDetail = ({movie, setTrailer, dateChosen, setDateChosen, showtimeOf
     </main>
 }
 
-const DateSelector = ({dateChosen, setDateChosen}) => {
+const DateSelector = ({dateChosen, setDateChosen, dateMark}) => {
     const getNextFourDays = ()=> {
         const days = []
         const daysOfWeek = ['CNhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
 
         for (let i = 0; i < 4; i++) {
-            let current = new Date() 
+            let current = new Date(dateMark)
             days.push({
                 fullDate: current.setDate(current.getDate() + i), 
                 dayLabel: daysOfWeek[current.getDay()], 
@@ -210,8 +210,12 @@ const DateSelector = ({dateChosen, setDateChosen}) => {
         }
         return days
     }
-
-    const [date] = useState(getNextFourDays())
+    
+    const [date, setDate] = useState(getNextFourDays())
+    useEffect(()=>{
+        setDate(getNextFourDays())
+    },[dateMark])
+    
 
     return <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {

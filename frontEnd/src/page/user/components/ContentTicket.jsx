@@ -28,7 +28,7 @@ const calculatorPrice = (chairChosen, price) => {
 // NGUYEN VAN A
 const ContentTicket = ({
     movie, showtime, listChair, socketId, setConfirm, setShowVoucher, 
-    priceBooking, setPriceBooking ,valueBeforeDiscount, setValueBeforeDiscount, setMsg, useVoucher, setConfirmBook, setUseVoucher}) => {
+    priceBooking, setPriceBooking ,valueBeforeDiscount,priceIsDiscount, setValueBeforeDiscount, setMsg, useVoucher, setConfirmBook, setUseVoucher}) => {
 
     const navigate = useNavigate()
     const [chairChosen, setChairChosen] = useState([])
@@ -42,7 +42,7 @@ const ContentTicket = ({
             useVoucher: useVoucher,
             title: movie?.title || "",
             seats: chairChosen.map(item => item.seat_number),
-            valueBeforeDiscount
+            priceIsDiscount
         }
         showLoading("Đang xử lý, vui lòng chờ !")
         setConfirmBook(dataForApi)
@@ -194,7 +194,7 @@ const ContentTicket = ({
                                 </span> Đã giảm
                             </span>
                                 <span className="text-white font-bold flex mr-2">
-                                    <span className="text-red-500">-{(valueBeforeDiscount - priceBooking)/1000}K</span>
+                                    <span className="text-red-500">-{(priceIsDiscount)/1000}K</span>
                                 </span>
                             </div>
                         }

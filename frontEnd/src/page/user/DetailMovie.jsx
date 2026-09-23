@@ -8,8 +8,23 @@ const  DetailMovie = () => {
     const location = useLocation()
     const [movie, setMovie] = useState(null)
     const [trailer, setTrailer] = useState("")
+    const [dateMark, setDateMark] = useState(new Date().toISOString().split('T')[0])
     const [dateChosen, setDateChosen] = useState(new Date().toISOString().split('T')[0])
     const [showtimeOfMovie,setShowtimeOfMovie] = useState([])
+
+
+    useEffect(()=>{
+        const getDatas = async () => {
+            const res = await customeFetch(apiUserService.baseURL+`/showtimes/users/dateMark/${location?.state?.idMovie}`)
+            if(res.ok){
+                const data = await res.json()
+                let date = new Date(data.start_time).toISOString().split('T')[0]
+                setDateChosen(date)
+                setDateMark(date)
+            }
+        } 
+        getDatas()
+    },[])
 
     useEffect(()=>{
         const getDatas = async () => {
@@ -41,14 +56,15 @@ const  DetailMovie = () => {
             }
         }
         getShowtimes()
-    },[dateChosen,location?.state?.idMovie,setShowtimeOfMovie]) 
+    },[dateChosen,location?.state?.idMovie,setShowtimeOfMovie, setDateChosen]) 
 
     let propsOfContent = {
         movie, 
         setTrailer,
         dateChosen,
         setDateChosen,
-        showtimeOfMovie
+        showtimeOfMovie,
+        dateMark
     }
 
     return <>

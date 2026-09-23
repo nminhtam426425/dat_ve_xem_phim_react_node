@@ -5,21 +5,93 @@ import { formatTimeChat } from '../../../validate'
 import { useLoading } from '../../../../LoadingContext'
 
 export default function ChatWidget() {
+  // số lượng tin nhắn mỗi khi scroll
+  const MESS_PER_PAGE = 10
   const {userInfo} = useLoading() 
   const [isOpen, setIsOpen] = useState(false)
   const [hasNewMessage, setHasNewMessage] = useState(false)// Trạng thái dấu chấm đỏ
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [offsetMessage, setOffsetMessage] = useState(0)
+  const [maxOffsetMessage, setMaxOffsetMessage] = useState(false)
+
+  const isInitialOpenRef = useRef(true)
+  const maxOffsetRef = useRef(maxOffsetMessage)
+  const isLoadingRef = useRef(false) // Tránh spam API khi đang fetch
   
   const messagesEndRef = useRef(null)
+  const viewportFrameChat = useRef(null)
+
+  const getMessages = async () => {
+    try{
+      const res = await customeFetch(apiUserService.baseURL+`/chats/messages/${offsetMessage}`,'authen','GET')
+      if(res.ok){
+        const data = await res.json()
+        setHasNewMessage(data.some(item => !item.is_read && item.sender_id != userInfo.id))
+        if(data.length == 0){
+          setMaxOffsetMessage(true)
+          return
+        }
+        setMessages([...data.reverse(), ...messages])
+        isLoadingRef.current = false
+      }
+    }
+    catch(err){
+      console.log(err)
+    }
+  }
+
+  // scrollTop: Khoảng cách từ đầu khung nhìn đến vị trí hiện tại của thanh cuộn
+  // scrollHeight: Chiều cao toàn bộ nội dung bên trong khung nhìn (bao gồm cả phần không nhìn thấy)
+  // clientHeight: Chiều cao của khung nhìn (phần nhìn thấy được)
+  useEffect(() => {
+    maxOffsetRef.current = maxOffsetMessage
+  }, [maxOffsetMessage])
 
   useEffect(() => {
     if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      isInitialOpenRef.current = true
+      console.log("scroll")
+      // Dùng instant thay vì smooth để tránh scroll ngang qua vùng scrollTop < 100
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' , block: 'nearest'})
       setHasNewMessage(false)
+  
+      // Bật lại tính năng scroll load-more sau khi DOM đã render ổn định
+      const timer = setTimeout(() => {
+        isInitialOpenRef.current = false
+      }, 300)
+  
+      return () => clearTimeout(timer)
     }
-  }, [isOpen, messages])
+  }, [isOpen]) 
+
+  useEffect(() => {
+    const container = viewportFrameChat.current
+    if (!isOpen || !container) return
+    const handleScroll = () => {
+      console.log(container.scrollTop)
+      // Bỏ qua nếu vừa mở chat hoặc đã hết tin nhắn hoặc đang load
+      if (isInitialOpenRef.current || maxOffsetRef.current || isLoadingRef.current) {
+        console.log(isInitialOpenRef.current,maxOffsetRef.current,isLoadingRef.current)
+        return
+      }
+      const scrollTop = container.scrollTop
+      console.log(scrollTop)
+      if (scrollTop < 100) {
+        isLoadingRef.current = true
+        setOffsetMessage(prev => prev + MESS_PER_PAGE)
+      }
+    }
+  
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [isOpen])
+  
+  useEffect(() => {
+    if(maxOffsetRef.current) return
+    getMessages()
+  },[offsetMessage])
 
   const handleReceiveMessage = (apiData) => {
     const { message_text } = apiData
@@ -35,23 +107,6 @@ export default function ChatWidget() {
       setHasNewMessage(true)
     setMessages(pre => [...pre, newMessageObj])
   }
-
-  useEffect(()=>{
-    const getMessages = async () => {
-      try{
-        const res = await customeFetch(apiUserService.baseURL+'/chats/messages','authen','GET')
-        if(res.ok){
-          const data = await res.json()
-          setHasNewMessage(data.some(item => !item.is_read && item.sender_id != userInfo.id))
-          setMessages(data)
-        }
-      }
-      catch(err){
-        console.log(err)
-      }
-    }
-    getMessages()
-  },[])
 
   useEffect(()=>{
       if(!isOpen || messages.length == 0) return
@@ -138,7 +193,7 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3.5">
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3.5" ref={viewportFrameChat}>
             {messages.map((msg) => {
               const isBuyer = msg.sender_id === userInfo.id
               return (

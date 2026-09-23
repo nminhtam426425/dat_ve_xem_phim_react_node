@@ -4,6 +4,7 @@ import { removeVietnameseTones, pusher, customeFetch, apiUserService } from '../
 import { useLoading } from '../../../LoadingContext'
 
 export default function AdminHeaderChat() {
+  const MESS_PER_PAGE = 10
   const {userInfo} = useLoading() 
   const [isOpen, setIsOpen] = useState(false)
   const [conversations, setConversations] = useState([])
@@ -12,9 +13,17 @@ export default function AdminHeaderChat() {
   const [inputValue, setInputValue] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [messages, setMessages] = useState([])
+  const [offsetMessages, setOffsetMessages] = useState(0)
+  const [maxOffsetMessage, setMaxOffsetMessage] = useState(false)
   
   const dropdownRef = useRef(null)
   const messagesEndRef = useRef(null)
+  const viewportFrameChat = useRef(null)
+  
+  const isInitialOpenRef = useRef(true)
+  const isFetching = useRef(false)   // Khi đã có nội dung chat, tránh fetch lại khi scroll lên đầu
+  const maxOffsetRef = useRef(maxOffsetMessage)
+  const isLoadingRef = useRef(false) // Tránh spam API khi đang fetch
 
   // Tính tổng số tin nhắn chưa đọc để làm badge trên Header Icon
   const totalUnread = conversations.reduce((sum, item) => sum + item.unreadCount, 0)
@@ -94,12 +103,50 @@ export default function AdminHeaderChat() {
     getUserInfo()
   }
 
+  useEffect(() => {
+    maxOffsetRef.current = maxOffsetMessage
+  }, [maxOffsetMessage])
+
+  // khi tắt chi tiết hôi thoại, reset lại biến này để có thể lấy được tin nhắn
+  useEffect(() => {
+    if(activeChatId == null){
+      isLoadingRef.current = false
+      isFetching.current = false
+    }
+  }, [activeChatId])
+
+  useEffect(() => {
+    if(offsetMessages > 0)
+      isFetching.current = true 
+  }, [offsetMessages])
+
+  useEffect(() => {
+    const container = viewportFrameChat.current
+    if (activeChatId == null || !container) return
+
+    const handleScroll = () => {
+      // Bỏ qua nếu vừa mở chat hoặc đã hết tin nhắn hoặc đang load
+      if (isInitialOpenRef.current || maxOffsetRef.current || isLoadingRef.current) {
+        console.log(isInitialOpenRef.current, maxOffsetRef.current, isLoadingRef.current)
+        return
+      }
+
+      if (container.scrollTop < 100) {
+        isLoadingRef.current = true
+        setOffsetMessages(prev => prev + MESS_PER_PAGE)
+      }
+    }
+  
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [activeChatId])
+
   // lấy nội dung cuộc trò chuyện
   useEffect(() => {
     if(activeChatId == null) return
     const getMessages = async () => {
       try{
-        const res = await customeFetch(apiUserService.baseURL+`/chats/messagesAdmin/${activeChatId}`,'authen','GET')
+        const res = await customeFetch(apiUserService.baseURL+`/chats/messagesAdmin/${activeChatId}/${offsetMessages}`,'authen','GET')
         if(res.ok){
           const data = await res.json()
           setConversations((prevConversations) => {
@@ -116,29 +163,51 @@ export default function AdminHeaderChat() {
             return updatedConversations
         
           })
-          setMessages(data)
+          if(data.length == 0){
+            setMaxOffsetMessage(true)
+            return
+          }
+          isLoadingRef.current = false
+          setMessages([...data.reverse(), ...messages])
         }
       }
       catch(err){
         console.log(err)
       }
     }
-    getMessages()
-  }, [activeChatId])
-  
+     getMessages()
+  }, [offsetMessages, activeChatId])
+
   useEffect(() => {
-    if (messages.length > 0) {
+    if (activeChatId != null) {
+      if(isFetching.current) return
+      isInitialOpenRef.current = true
+      
+      // Dùng instant thay vì smooth để tránh scroll ngang qua vùng scrollTop < 100
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' , block: 'nearest'})
+        
+      // Bật lại tính năng scroll load-more sau khi DOM đã render ổn định
       const timer = setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'nearest', // Giúp hạn chế scroll lan ra window bên ngoài
-          inline: 'nearest' 
-        })
-      }, 50)
+        isInitialOpenRef.current = false
+      }, 300)
   
       return () => clearTimeout(timer)
     }
-  }, [messages])
+  }, [messages, activeChatId]) 
+  
+  // useEffect(() => {
+  //   if (messages.length > 0) {
+  //     const timer = setTimeout(() => {
+  //       messagesEndRef.current?.scrollIntoView({ 
+  //         behavior: 'smooth', 
+  //         block: 'nearest', // Giúp hạn chế scroll lan ra window bên ngoài
+  //         inline: 'nearest' 
+  //       })
+  //     }, 50)
+  
+  //     return () => clearTimeout(timer)
+  //   }
+  // }, [messages])
 
   // lấy các cuộc hội thoại
   useEffect(()=>{
@@ -178,6 +247,9 @@ export default function AdminHeaderChat() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false)
         setActiveChatId(null) // Reset về màn hình danh sách khi đóng
+        setOffsetMessages(0)
+        setMaxOffsetMessage(false)
+        setMessages([])
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -195,10 +267,13 @@ export default function AdminHeaderChat() {
   
     // Trở lại màn hình danh sách khách hàng
   const handleBackToList = () => {
-    setActiveChatId(null);
+    setActiveChatId(null)
+    setOffsetMessages(0)
+    setMaxOffsetMessage(false)
+    setMessages([])
   }
   
-    // Gửi tin nhắn từ phía Admin
+  // Gửi tin nhắn từ phía Admin
   const handleSendMessage = async (e) => {
     e.preventDefault()
     if (!inputValue.trim()) return
@@ -243,6 +318,14 @@ export default function AdminHeaderChat() {
       const {value} = e.target
       setSearch(value)
   }
+
+  const closeChat = () => {
+    setIsOpen(false)
+    setActiveChatId(null)
+    setOffsetMessages(0)
+    setMaxOffsetMessage(false)
+    setMessages([])
+  }
   
   const activeChat = conversations.find(c => c.id === activeChatId)
 
@@ -280,7 +363,7 @@ export default function AdminHeaderChat() {
                     <p className="text-xs text-gray-400 mt-0.5">Bạn có {totalUnread} cuộc hội thoại chưa xử lý</p>
                   </div>
                   <button 
-                    onClick={() => setIsOpen(false)}
+                    onClick={closeChat}
                     className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
                   >
                     <X className="w-5 h-5" />
@@ -377,10 +460,7 @@ export default function AdminHeaderChat() {
                     </div>
                   </div>
                   <button 
-                    onClick={() => {
-                      setActiveChatId(null)
-                      setIsOpen(false)
-                    }}
+                    onClick={closeChat}
                     className="p-1 rounded-full hover:bg-indigo-700 text-indigo-100 hover:text-white transition-colors"
                   >
                     <X className="w-5 h-5" />
@@ -388,7 +468,7 @@ export default function AdminHeaderChat() {
                 </div>
   
                 {/* Vùng hội thoại tin nhắn (Có Scroll) */}
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3.5">
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3.5" ref={viewportFrameChat}>
                   {messages.map((msg) => {
                     const isAdmin = msg.sender_id === userInfo.id
                     return (
@@ -426,7 +506,6 @@ export default function AdminHeaderChat() {
                       </div>
                     );
                   })}
-                  {/* Neo scroll */}
                   <div ref={messagesEndRef} />
                 </div>
   

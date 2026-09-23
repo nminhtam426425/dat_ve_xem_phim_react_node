@@ -1,15 +1,18 @@
 import { useEffect, useState, useRef } from "react"
 import { formatDate2 } from "../../../validate"
 import { customeFetch, apiUserService, getAccessToken } from "../../../config"
-import { toast } from "sonner"
 
-
-
-const Voucher = ({showVoucher, setShowVoucher, priceBooking, priceAfterDiscount, setPriceBooking, useVoucher, setUseVoucher}) => {
+// priceBooking: giá trị đầu tiến
+// priceAfterDiscount: giá trị sau khi giảm
+// setPriceBooking: sét giá trị còn lại sau khi giảm - là state của priceAfterBooking 
+// setPriceIsDiscount: lấy tổng giá trị đã giảm 
+const Voucher = ({showVoucher, setShowVoucher, priceBooking, setPriceBooking, useVoucher, setUseVoucher,setPriceIsDiscount}) => {
     const [vouchers, setVouchers] = useState([])
     // dùng để sử dụng voucher cá nhân (cho phép sử dụng tối đa 2 voucher - 1 của hệ thống 1 - của ngươi tích điểm
     const [myVoucher, setMyVoucher] = useState([])
     const [showMyVoucher, setShowMyVoucher] = useState(false)
+    // khi giảm giá về 0, cần biến lưu trữ giá trị trước đó
+    const [discountSpecial, setDiscountSpecial ] = useState([])
     const containerRef = useRef(null)
 
     useEffect(()=>{
@@ -81,30 +84,35 @@ const Voucher = ({showVoucher, setShowVoucher, priceBooking, priceAfterDiscount,
     }
 
     const handleUseVoucher = (voucher) => {
-        if(priceBooking < voucher.min_order_value){
-            toast.error(`Đơn hàng chưa đạt giá trị tối thiểu ${voucher.min_order_value/1000}K để sử dụng voucher này !`)
-            return
-        }
         let newArr = checkUse(useVoucher, voucher)
         let discount = calTotalPrice(newArr)
+
         let tempDiscount = priceBooking - discount < 0 ? 0 : priceBooking - discount
 
         setUseVoucher(newArr)
         setPriceBooking(tempDiscount)
+        setPriceIsDiscount(discount)
         setShowVoucher(false)
         containerRef.current.scrollTop = 0
+        console.log(containerRef.current.scrollTop)
     }
 
     const cancelVoucher = (voucher) => {
-        let discount = getValueDiscount(voucher)
+        let newArr = useVoucher.filter(item => item.id != voucher.id)
+        let discount = calTotalPrice(newArr)
+        console.log("discount",discount)
+
+        let tempDiscount = priceBooking - discount < 0 ? 0 : priceBooking - discount
+
+        setPriceBooking(tempDiscount)
+        setPriceIsDiscount(discount)
         setUseVoucher(pre => [...pre.filter(item => item.id != voucher.id)])
-        setPriceBooking(priceAfterDiscount + discount)
         setShowVoucher(false)
         containerRef.current.scrollTop = 0
     }
 
     return <div className="modal" style={{display: showVoucher ? 'flex' : 'none'}}>
-        <div className="modal-content modal-content-h-90 overflow-x-scroll bg-gray-200 rounded-2xl shadow-xl">
+        <div className="modal-content modal-content-h-90 overflow-x-scroll bg-gray-200 rounded-2xl shadow-xl" ref={containerRef}>
             <span className="close absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-[32px] cursor-pointer transition-colors duration-200 leading-none" style={{right: '0%'}} onClick={()=>setShowVoucher(false)}>&times;</span>
 
             <div className="flex gap-2 justify-between mb-2">
@@ -137,8 +145,7 @@ const Voucher = ({showVoucher, setShowVoucher, priceBooking, priceAfterDiscount,
                     handleUseVoucher={handleUseVoucher} 
                     priceBooking={priceBooking} 
                     useVoucher={useVoucher}
-                    cancelVoucher={cancelVoucher}
-                    containerRef={containerRef}/>
+                    cancelVoucher={cancelVoucher}/>
                 :
                     <RenderListVoucher 
                     type="public" 
@@ -146,20 +153,18 @@ const Voucher = ({showVoucher, setShowVoucher, priceBooking, priceAfterDiscount,
                     handleUseVoucher={handleUseVoucher} 
                     priceBooking={priceBooking} 
                     useVoucher={useVoucher}
-                    cancelVoucher={cancelVoucher}
-                    containerRef={containerRef}/>
+                    cancelVoucher={cancelVoucher}/>
             }
         </div>
     </div>
 }
 
-const RenderListVoucher = ({data, handleUseVoucher, priceBooking, useVoucher, cancelVoucher, containerRef}) => {
+const RenderListVoucher = ({data, handleUseVoucher, priceBooking, useVoucher, cancelVoucher}) => {
     const handleOnCanUse = (price, voucher) => {
-        return true
-        // if(!price || !voucher) return false
-        // if(price >= voucher.min_order_value)
-        //     return true
-        // return false
+        if(!price || !voucher) return false
+        if(price >= voucher.min_order_value)
+            return true
+        return false
     }
     
     return <>
@@ -169,7 +174,6 @@ const RenderListVoucher = ({data, handleUseVoucher, priceBooking, useVoucher, ca
                 ?
                 data?.map( item => <>
                     <div 
-                        ref={containerRef}
                         key={item.code}
                         className={`group bg-zinc-900 border border-zinc-800/50 rounded-xl overflow-hidden shadow-2xl transition-transform active:scale-95 duration-200
                             ${handleOnCanUse(priceBooking,item) ? '' : 'opacity-70'}`}

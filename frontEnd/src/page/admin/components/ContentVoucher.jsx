@@ -62,11 +62,6 @@ const ContentVoucher = ({setDataItem, datas, setConfirm, setDataItemBeforeConfir
     }
 
     const resetFilter = () => {
-        setTypeVoucher('all')
-        setFreeVoucher(-1)
-    }
-    if(freeVoucher == 2){
-        console.log(dataOfPage)
     }
 
     return <>
