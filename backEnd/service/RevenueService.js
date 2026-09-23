@@ -70,7 +70,7 @@ class RevenueService {
     getRevenueFromStartToEndMark = async (startMark, endMark) => {
         return  await Bookings.findAll({
             attributes: [
-                'booking_date',
+                [sequelize.fn('DATE', sequelize.col('booking_date')), 'booking_date'],
                 [sequelize.fn('SUM', sequelize.col('price_at_booking')), 'revenue']
             ],
             where: {

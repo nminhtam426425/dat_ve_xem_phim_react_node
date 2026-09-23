@@ -35,7 +35,8 @@ class AuthenController {
     getMessages = async (req, res) => {
         try {
             const {id} = req.user
-            const result = await ChatService.getMessageOfUser(id)
+            const {offset} = req.params
+            const result = await ChatService.getMessageOfUser(id,offset)
             res.status(200).json(result)
         } catch (error) {
             res.status(500).json({ message: error.message })
@@ -45,7 +46,8 @@ class AuthenController {
     getMessagesByID = async (req, res) => {
         try {
             const id_conver = req.params.id_conver
-            const result = await ChatService.getMessageOfConver(id_conver)
+            const offset = req.params.offset
+            const result = await ChatService.getMessageOfConver(id_conver, offset)
             res.status(200).json(result)
         } catch (error) {
             res.status(500).json({ message: error.message })

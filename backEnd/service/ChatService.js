@@ -119,19 +119,19 @@ class ChatService {
         }
     }
 
-    getMessageOfUser = async (user_id) => {
+    getMessageOfUser = async (user_id,offset) => {
         try {
             let conver = await findObject(Conversations, 'user_id', user_id)
 
-            return await this.getMessageOfConver(conver.id)
+            return await this.getMessageOfConver(conver.id, offset)
         } 
         catch (error) {
             throw new Error(error.message)
         }
     }
 
-    // lấy nội dung cuộc trò chuyện với id_conver tương ứng
-    getMessageOfConver = async (conver_id) => {
+    // lấy nội dung cuộc trò chuyện với id_conver tương ứng, default limit 10 tin nhắn
+    getMessageOfConver = async (conver_id, offset) => {
         try {
             let conver = await Conversations.findOne({
                 where: {
@@ -154,7 +154,9 @@ class ChatService {
               where: {
                 conver_id
               },
-              order: [['created_at', 'ASC']], 
+              order: [['created_at', 'DESC']],
+              limit: 10,
+              offset: Number(offset) || 0,
             })
         } 
         catch (error) {

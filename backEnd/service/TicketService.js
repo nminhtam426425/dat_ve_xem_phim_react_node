@@ -167,13 +167,19 @@ class TicketService {
     }
 
     // chưa xử lý voucher
-    paymentSuccess = async (idUser,showtime_id,price_at_booking,role,userEarnPoint=null,useVoucher) => {
+    // special == 'yes' --> khi voucher về 0. Bỏ qua thanh toán và đặt vé thành công
+    paymentSuccess = async (idUser,showtime_id,price_at_booking,role,userEarnPoint=null,useVoucher,special=null) => {
+        let statusBooking = role == 'staff' ? 'paid' : 'pending'
+        if(special == 'yes'){
+            statusBooking = 'paid'
+        }
+
         let dataForCreate = {
             id: crypto.randomUUID(),
             user_id: role == 'user' ? idUser : userEarnPoint?.id || null,
             staff_id: role == 'staff' ? idUser : null,
             showtime_id: showtime_id,
-            payment_status: role == 'staff' ? 'paid' : 'pending',
+            payment_status: statusBooking,
             price_at_booking: price_at_booking
         }
         let result = await Bookings.create(dataForCreate)
@@ -212,19 +218,37 @@ class TicketService {
 
         // nếu là staff -> status == 'paid' không quan tâm đến field expired_at
         // ngược lại user -> cập nhật lại thêm thời hạn thanh toán
-        await this.ticket.update(
-            {
-                booking_id: result.id,
-                status: dataForCreate.payment_status,
-                expired_at: this.addMinutes(new Date(),6)
-            },
-            {
-                where: {
-                    showtime_id: showtime_id,
-                    booking_id: idUser
+        // special == 'yes' -> bỏ qua thanh toán, đặt vé thành công
+        if(special=='yes'){
+            await this.ticket.update(
+                {
+                    booking_id: result.id,
+                    status: 'paid',
+                },
+                {
+                    where: {
+                        showtime_id: showtime_id,
+                        booking_id: idUser
+                    }
                 }
-            }
-        )
+            )
+        }
+        else{
+            await this.ticket.update(
+                {
+                    booking_id: result.id,
+                    status: dataForCreate.payment_status,
+                    expired_at: this.addMinutes(new Date(),6)
+                },
+                {
+                    where: {
+                        showtime_id: showtime_id,
+                        booking_id: idUser
+                    }
+                }
+            )
+        }
+        
         if(userEarnPoint){
             let showtime = await findObject(Showtimes, 'id', showtime_id)
             let user = await findObject(User, 'id', userEarnPoint.id)
@@ -239,7 +263,6 @@ class TicketService {
                 reward_points: point
             })
         }
-       
 
         return result
     }

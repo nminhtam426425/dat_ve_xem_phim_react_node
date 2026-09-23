@@ -23,7 +23,18 @@ class PaymentService {
     // vnp_BankCode=INTCARD - Thẻ thanh toán quốc tế
     createOrder = async (idUser,ipAddress,{showtime_id,price_at_booking,role,userEarnPoint=null,useVoucher}) => {
         try {
-            const order = await TicketService.paymentSuccess(idUser,showtime_id,price_at_booking,role,userEarnPoint,useVoucher)
+            let isLocalPayment = process.env.PAYMENT_ENVIRONMENT === 'local'
+            let special = price_at_booking == 0 || isLocalPayment ? 'yes' : null
+
+            const order = await TicketService.paymentSuccess(idUser,showtime_id,price_at_booking,role,userEarnPoint,useVoucher,special)
+
+            if(isLocalPayment)
+                return {paymentStatus: 'special', orderId: order.id}
+            
+
+            if(price_at_booking == 0)
+                return {paymentStatus: 'special', orderId: order.id}
+            
 
             if (!order || !price_at_booking) 
                 throw new Error("Thiếu trường dữ liệu !")

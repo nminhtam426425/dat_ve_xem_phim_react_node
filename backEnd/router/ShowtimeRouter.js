@@ -18,6 +18,7 @@ showtimeRouter.get('/seats/:id_showtime',authenticate,authorize(["admin","staff"
 showtimeRouter.get('/seats/non-login/:id_showtime',ShowtimeController.getListChairOfShowtime)
 showtimeRouter.get('/user',ShowtimeController.getListShowtimeForHome)
 showtimeRouter.get('/user/:id_movie/:date',ShowtimeController.getShowtimeByMovie)
+showtimeRouter.get('/users/dateMark/:id_movie',ShowtimeController.getDateMarkForGetShowtimes)
 
 
 export default showtimeRouter

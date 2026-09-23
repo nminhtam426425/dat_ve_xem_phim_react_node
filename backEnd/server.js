@@ -16,7 +16,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 
 const server = express()
-server.set('trust proxy', 1);
+//server.set('trust proxy', 1);
 server.use(express.json())
 server.use(
     cors(
@@ -42,12 +42,8 @@ server.use('/chats',routerChat)
 server.get('/',(req,res)=>{
     res.status(200).json("Hello world !")
 })
+
 server.listen(process.env.PORT,process.env.HOST,()=>{
     console.log(`Server is running at http://${process.env.HOST}:${process.env.PORT}`);
 })
 
-const tempFC = () => {
-    setInterval(()=>{
-        console.log("hehe is running");
-    },1000)
-}

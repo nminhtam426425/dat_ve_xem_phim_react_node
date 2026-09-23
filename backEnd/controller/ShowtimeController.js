@@ -111,6 +111,16 @@ class ShowtimeController {
         }
     }
 
+    getDateMarkForGetShowtimes= async (req,res) => {
+        try { 
+            let idMovie = req.params.id_movie
+            const result = await this.showtimeService.getDateMarkForGetShowtimes(idMovie)
+            res.status(200).json(result)
+        } catch (error) {
+            res.status(500).json({ message: error.message })
+        }
+    }
+
 }
 
 export default new ShowtimeController(ShowtimeService)

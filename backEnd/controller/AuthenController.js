@@ -1,14 +1,18 @@
 import {AuthenService} from "../service/index.js"
 
 class AuthenController {
-    
+    constructor(environment) {
+        this.environment = environment;
+    }
+
     login = async (req, res) => {
         try {
+
             const result = await AuthenService.login(req.body)
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,  // Ngăn JavaScript truy cập
-                secure: true,    // Chỉ gửi qua HTTPS 
-                sameSite: 'none', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
+                secure: this.environment == 'development' ? false : true,    // Chỉ gửi qua HTTPS 
+                sameSite: this.environment == 'development' ? 'strict' : 'none', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
                 maxAge: 24 * 60 * 60 * 1000
             })
             res.status(200).json({token: result.token})
@@ -22,8 +26,8 @@ class AuthenController {
             const result = await AuthenService.loginWithGoogle(req.body)
             res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,  // Ngăn JavaScript truy cập
-                secure: true,    // Chỉ gửi qua HTTPS 
-                sameSite: 'none', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
+                secure: this.environment == 'development' ? false : true,    // Chỉ gửi qua HTTPS 
+                sameSite: this.environment == 'development' ? 'strict' : 'none', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
                 maxAge: 24 * 60 * 60 * 1000
             })
             res.status(200).json({token: result.token})
@@ -49,8 +53,8 @@ class AuthenController {
         try {
             res.clearCookie('refreshToken', {
                 httpOnly: true,
-                secure: true,      
-                sameSite: 'none'
+                secure: this.environment == 'development' ? false : true,    // Chỉ gửi qua HTTPS 
+                sameSite: this.environment == 'development' ? 'strict' : 'none', // Ngăn chặn tấn công CSRF (Cross-Site Request Forgery)
             })
     
             return res.status(200).json({ message: 'Đăng xuất thành công!' })
@@ -61,4 +65,4 @@ class AuthenController {
     
 }
 
-export default new AuthenController()
+export default new AuthenController(process.env.ENVIRONMENT)

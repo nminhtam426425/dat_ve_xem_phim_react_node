@@ -1,8 +1,9 @@
 import { Showtimes, Movies, Tickets, Categories, Seats, MovieTheater, TypeTheater, MovieTrending } from "../model/index.js"
 import { MovieTheaterService} from "./index.js"
-import { Op } from 'sequelize'
+import { Op, where } from 'sequelize'
 import crypto from "crypto"
 import { findObject, convertObjectForUpdate } from "./validate.js"
+import { start } from "repl"
 
 class ShowtimeService {
     constructor(showtime) {
@@ -406,6 +407,24 @@ class ShowtimeService {
             return false
         return true
     }
+
+    // lấy suất chiếu kèm tự dộng trả về ngày chiếu - để trang luôn có dữ liệu hiển thị mẫu
+    getDateMarkForGetShowtimes = async (idMovie) => {
+        // không cân làm mới dữ liệu mẫu
+        let result = await this.showtime.findOne({
+            attributes: ['start_time'],
+            where:{
+                start_time: {
+                    [Op.gte]: new Date()
+                },
+                movie_id: idMovie
+            },
+            order: [['start_time', 'ASC']]
+        })
+
+        return result? result: new Date().toISOString().split('T')[0]
+    }
+
 
     getShowtimeByMovie = async (idMovie, date=newDate()) => {
         let mark = new Date(date)
