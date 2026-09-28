@@ -41,11 +41,11 @@ export default function Navbar({searchQuery, setSearchQuery}) {
     }
   
     return (
-        <nav className={`sticky top-0 w-full z-50 transition-all duration-300 overflow-hidden ${
+        <nav className={`sticky top-0 w-full z-50 transition-all duration-300 ${
           isDarkMode 
             ? 'bg-zinc-950 backdrop-blur-xl border-b border-white/10 text-white' 
             : 'bg-white/80 backdrop-blur-xl border-b border-black/10 text-neutral-900 shadow-sm'}`}>
-          <div className="flex justify-between items-center px-6 py-4 max-w-[1500px] mx-auto relative">
+          <div className={`flex justify-between items-center px-6 py-4 max-w-[1500px] mx-auto relative ${isMenuOpen ? '' : 'overflow-hidden'}`}>
             <Link 
               to="/"
               className="flex items-center gap-2 cursor-pointer group"
@@ -126,7 +126,7 @@ export default function Navbar({searchQuery, setSearchQuery}) {
             </div>
 
             <div className='absolute right-0 bg-zinc-950 md:hidden h-[100%]'>
-              <div className='relative left-[80%] h-[100%] w-[60px] flex items-center'>
+              <div className='relative left-[70%] h-[100%] w-[60px] flex items-center'>
                 <button 
                   onClick={()=>setIsMenuOpen(true)}
                   >
@@ -184,7 +184,7 @@ export default function Navbar({searchQuery, setSearchQuery}) {
                   ))
                 }
 
-{
+              {
                 userInfo && getAccessToken()
                 ?
                 <>
