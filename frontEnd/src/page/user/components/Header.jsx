@@ -41,7 +41,7 @@ export default function Navbar({searchQuery, setSearchQuery}) {
     }
   
     return (
-        <nav className={`sticky top-0 w-full z-50 transition-all duration-300 ${
+        <nav className={`sticky top-0 w-full z-50 transition-all duration-300 overflow-hidden ${
           isDarkMode 
             ? 'bg-zinc-950 backdrop-blur-xl border-b border-white/10 text-white' 
             : 'bg-white/80 backdrop-blur-xl border-b border-black/10 text-neutral-900 shadow-sm'}`}>

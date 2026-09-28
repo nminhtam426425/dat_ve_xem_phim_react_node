@@ -422,7 +422,7 @@ class ShowtimeService {
             order: [['start_time', 'ASC']]
         })
 
-        return result? result: new Date().toISOString().split('T')[0]
+        return result ? result : new Date().toISOString().split('T')[0]
     }
 
 

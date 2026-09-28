@@ -8,6 +8,7 @@ import {useLoading} from '../../../LoadingContext'
 
 const  Login = () => {
     const clientId = import.meta.env.VITE_CLIENT_GOOGLE_ID
+    const ggPermit = import.meta.env.VITE_GOOGLE_PERMIT === 'true'
     const navigate = useNavigate() 
     const {setUserInfo, showLoading, hideLoading} = useLoading()
     const location = useLocation()
@@ -211,11 +212,11 @@ const  Login = () => {
              
               <div className="flex items-center my-8">
               <div className="flex-grow h-px bg-outline-variant"></div>
-              <span className="px-4 text-label-sm font-label-sm text-secondary">HOẶC-TIẾP TỤC VỚI</span>
+              {ggPermit&&<span className="px-4 text-label-sm font-label-sm text-secondary">HOẶC-TIẾP TỤC VỚI</span>}
               <div className="flex-grow h-px bg-outline-variant"></div>
               </div>
               
-              <div className="grid grid-cols-1 gap-4">
+              {ggPermit&&<div className="grid grid-cols-1 gap-4">
                 <GoogleOAuthProvider clientId={clientId}>
                   {/* <div className="cursor-pointer flex items-center justify-center gap-2 py-3 px-4 border border-outline-variant rounded-lg bg-white hover:bg-surface-container transition-colors font-label-bold text-label-bold">
                     <img 
@@ -237,7 +238,8 @@ const  Login = () => {
                   <span className="material-symbols-outlined text-[#1877F2]" data-icon="facebook"></span>
                     Facebook
                 </button> */}
-              </div>
+              </div>}
+              
              
               <div className="mt-8 text-center">
                 <p className="text-body-md font-body-md text-secondary">
