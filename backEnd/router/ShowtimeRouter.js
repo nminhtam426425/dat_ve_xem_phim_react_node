@@ -14,7 +14,7 @@ showtimeRouter.get('/date/:date',authenticate,authorize(["admin","staff"]),Showt
 showtimeRouter.get('/staff',authenticate,authorize(["admin","staff"]),ShowtimeController.getShowtimeForStaff)
 showtimeRouter.get('/seats/:id_showtime',authenticate,authorize(["admin","staff","user"]),ShowtimeController.getListChairOfShowtime)
 
-//chỉ dùng phía user (dùng cho chưa đăng nhập, Không cần tài khoản)
+//chỉ dùng phía user (dùng cho chưa đăng nhập, Không cần tài khoản - chức năng chưa hoàn thiện)
 showtimeRouter.get('/seats/non-login/:id_showtime',ShowtimeController.getListChairOfShowtime)
 showtimeRouter.get('/user',ShowtimeController.getListShowtimeForHome)
 showtimeRouter.get('/user/:id_movie/:date',ShowtimeController.getShowtimeByMovie)

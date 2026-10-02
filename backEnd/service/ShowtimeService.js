@@ -1,9 +1,8 @@
-import { Showtimes, Movies, Tickets, Categories, Seats, MovieTheater, TypeTheater, MovieTrending } from "../model/index.js"
+import { Showtimes, Movies, Tickets, Categories, Seats, MovieTheater, TypeTheater } from "../model/index.js"
 import { MovieTheaterService} from "./index.js"
-import { Op, where } from 'sequelize'
+import { Op } from 'sequelize'
 import crypto from "crypto"
 import { findObject, convertObjectForUpdate } from "./validate.js"
-import { start } from "repl"
 
 class ShowtimeService {
     constructor(showtime) {
@@ -288,29 +287,40 @@ class ShowtimeService {
 
     // khi tìm vé tương ứng với suất chiếu
     // nếu chưa thanh toán thì xóa luôn, không cần redis
-    deleteTicketNotPayment = async (showtime_id) => {
-        await Tickets.destroy({
-            where: {
+    deleteTicketNotPayment = async (showtime_id, idUser) => {
+        let conditionDelete = [
+            {
                 status: 'pending',
                 expired_at: {
                     [Op.lte]: new Date()
                 },
                 showtime_id: showtime_id
             }
+        ]
+        if(idUser){
+            conditionDelete.push({
+                status: 'pending',
+                showtime_id: showtime_id,
+                booking_id: idUser
+            })
+        } 
+        await Tickets.destroy({
+            where: {
+                [Op.or]: conditionDelete
+            }
         })
-        
     }
 
     // lấy danh sách các ghế và trạng thái đặt trong phòng chiếu
     // dùng cho staff, user
-    getListChairOfShowtime = async (idShowtime) => {
+    getListChairOfShowtime = async (idShowtime,idUser) => {
         const showtime = await findObject(this.showtime, 'id', idShowtime)
         const theater = await findObject(MovieTheater, 'id', showtime.room_id)
 
          // xoá những vé chưa thanh toán thỏa điều kiện
         // status = hodlng
         // expired_at = now ()
-        await this.deleteTicketNotPayment(showtime.id)
+        await this.deleteTicketNotPayment(showtime.id, idUser)
 
         let tickets = await Tickets.findAll({
             where: {showtime_id: showtime.id},

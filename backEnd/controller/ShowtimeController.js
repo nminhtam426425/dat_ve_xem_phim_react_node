@@ -75,7 +75,11 @@ class ShowtimeController {
     getListChairOfShowtime = async (req,res) => {
         try {
             let id = req.params.id_showtime
-            const result = await this.showtimeService.getListChairOfShowtime(id)
+            let id_user = null
+            if(req.user && req.user.id)
+                id_user = req.user.id
+
+            const result = await this.showtimeService.getListChairOfShowtime(id,id_user)
             res.status(200).json(result)
         } catch (error) {
             res.status(500).json({ message: error.message })
