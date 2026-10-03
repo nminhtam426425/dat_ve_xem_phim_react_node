@@ -5,7 +5,7 @@ import Paging from "./Paging"
 import MovieCard from "./MovieCard"
 import { removeVietnameseTones } from "../../config"
 
-const ContentList = ({setTrailer,searchQuery, setSearchKeyword, dataRender}) => {
+const ContentList = ({setTrailer,searchQuery, setSearchKeyword, dataRender, dataEmpty}) => {
     const location = useLocation()
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
@@ -55,7 +55,11 @@ const ContentList = ({setTrailer,searchQuery, setSearchKeyword, dataRender}) => 
                     <Paging currentPage={currentPage} setCurrentPage={setCurrentPage}  totalPage={totalPages} resetFilter={resetFilter}/>
                 </>
                 :
-                <div className="h-[370px] text-white">Không có dữ liệu</div>
+                <div className="h-[370px] text-white">
+                    {
+                        dataEmpty ? "Không có dữ liệu!" : "Đang tải dữ liệu, vui lòng chờ <3"
+                    }
+                </div>
             }
         </div>
     </main> 

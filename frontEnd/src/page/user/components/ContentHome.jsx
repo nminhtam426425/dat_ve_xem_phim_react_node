@@ -2,9 +2,9 @@ import { ChevronRight, Star, PlayCircle, Ticket } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import Category from "./Category"
 import MovieCard from "./MovieCard"
-import MovieComing from "./MovieComing"
 import Gallery from "./Gallery"
 
+const imgDefault = "https://t4.ftcdn.net/jpg/05/45/00/61/360_F_545006103_494V9sxL18KYW2TBMXZ0a2WPKstPuogG.jpg"
 const ContentHome = ({setTrailer, dataRender, trending}) => {
     const navigate = useNavigate()
 
@@ -20,7 +20,7 @@ const ContentHome = ({setTrailer, dataRender, trending}) => {
         <main className="bg-zinc-950">
             <section className="mx-auto relative h-[-300px] md:h-[700px] w-[full] flex items-end overflow-hidden p-2 md:px-12 max-w-[1280px] mx-auto">
                 <div className="absolute inset-0 z-0">
-                    <img alt="Main Featured Movie" className="w-full h-full object-fit" src={trending.background_url == "" ? null : trending.background_url}/>
+                    <img alt="Main Featured Movie" className="w-full h-full object-fit" src={trending.background_url == "" || trending.background_url == null ? imgDefault : trending.background_url} loading="lazy"/>
                     <div className="absolute inset-0 bg-gradient-to-t from-background2 via-background2/20 to-transparent"></div>
                     <div className="absolute inset-0 bg-gradient-to-r from-background2 via-transparent to-transparent"></div>
                 </div>

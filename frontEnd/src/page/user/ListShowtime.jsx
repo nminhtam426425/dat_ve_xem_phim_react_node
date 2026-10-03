@@ -7,6 +7,7 @@ import { useDebounce } from 'use-debounce'
 const  ListShowtime = () => {
     const [searchQuery, setSearchQuery] =  useState("")
     const [dataRenderList, setDataRenderList] = useState([])
+    const [dataEmpty , setDataEmpty] = useState(false)
     const [trailer, setTrailer] = useState("")
     const [debouncedSearch] = useDebounce(searchQuery, 500)
 
@@ -16,6 +17,9 @@ const  ListShowtime = () => {
                 const res = await customeFetch(apiUserService.baseURL+'/showtimes/user')
                 if(res.ok){
                     const data = await res.json()
+                    if(data.showing.length === 0)
+                        setDataEmpty(true)
+                    
                     setDataRenderList(data.showing)
                 }
             }
@@ -28,7 +32,7 @@ const  ListShowtime = () => {
 
     return <>
         <Header setSearchQuery={setSearchQuery} searchQuery={searchQuery}/>
-        <ContentList setTrailer={setTrailer} searchQuery={debouncedSearch} setSearchKeyword={setSearchQuery} dataRender={dataRenderList}/>
+        <ContentList setTrailer={setTrailer} searchQuery={debouncedSearch} setSearchKeyword={setSearchQuery} dataRender={dataRenderList} dataEmpty={dataEmpty}/>
         <WatchTrailer trailerUrl={trailer} setTrailerUrl={setTrailer}/>
         <Footer/>
     </>
